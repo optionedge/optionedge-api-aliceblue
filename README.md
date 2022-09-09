@@ -7,8 +7,6 @@ OptionEdge client library provides simpler interface to connect to AliceBlue RES
 Current [AliceBlue V2 Api](https://v2api.aliceblueonline.com/introduction) documentation and [Postman collection](https://v2api.aliceblueonline.com/introduction) provided has many inconsistencies. Abbreviated & inconsistent field names & data types are used many places. API seems to be still under development. I have tried my best to abstract away all the lower level details and provided more readable & consistent interface to interact with the Api. However, current REST Api is still not stable and Api parameters, data types & rest endpoint might change.
 
 Currently this library is in beta stage, please expect the methods, parameters to be changed based on the feedback.
-
-test
 ## Refer to my channel on API Usage Guide [ProfTheta - Your Guide to Options](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJPohEQ) (to be posted)
 
 ## Please refer this Algo Trading Course on Youtube
