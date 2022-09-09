@@ -35,7 +35,7 @@ enable logging flag is set to true during the initialization, client library wil
 ## Install library
 
 ```
-Install-Package OptionEdge.Api.AliceBlue
+Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.1-beta
 ```
 
 ## Sample project
