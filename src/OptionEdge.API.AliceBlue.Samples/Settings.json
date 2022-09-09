@@ -1,0 +1,5 @@
+﻿{
+  "apiKey": "{{ YOUR_API_KEY }}",
+  "userId": "{{ YOUR_ALICEBLUE_USER_ID }}",
+  "enableLogging": true
+}
