@@ -9,6 +9,9 @@ namespace OptionEdge.API.AliceBlue.Samples
         {
             FeaturesDemo demo = new FeaturesDemo();
             demo.Run();
+
+            //DevTest demo = new DevTest();
+            //demo.Run();
         }
 
     }
