@@ -28,8 +28,8 @@ namespace OptionEdge.API.AliceBlue.Samples
             {
                 // Read ApiKey, userId from Settings 
                 // _settings = JsonConvert.DeserializeObject<Settings>(File.ReadAllText("settings.dev.json"));
-                _settings.ApiKey = "";
-                _settings.UserId = "";
+                _settings.ApiKey = Environment.GetEnvironmentVariable("ALICE_BLUE_API_KEY");
+                _settings.UserId = Environment.GetEnvironmentVariable("ALICE_BLUE_USER_ID");
                 _settings.EnableLogging = true;
 
                 // ==========================
@@ -50,7 +50,7 @@ namespace OptionEdge.API.AliceBlue.Samples
                         // This method will be used when re-initializing the api client during the the day (eg after app restart etc)
 
                         // If token is invalid or not available, just return empty or null value
-                        return null;
+                        return File.Exists(_cachedTokenFile) ? File.ReadAllText(_cachedTokenFile) : null;
                     });
 
 

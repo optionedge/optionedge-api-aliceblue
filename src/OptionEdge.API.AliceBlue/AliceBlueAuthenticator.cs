@@ -33,15 +33,21 @@ namespace OptionEdge.API.AliceBlue
 
         protected override async ValueTask<Parameter> GetAuthenticationParameter(string accessToken)
         {
-            if (_cachedAccessTokenProvider != null)
+            var cachedToken = string.Empty;
+
+            if (string.IsNullOrEmpty(this.Token) && _cachedAccessTokenProvider != null)
             {
-                var cachedToken = _cachedAccessTokenProvider?.Invoke();
+                cachedToken = _cachedAccessTokenProvider?.Invoke();
                 if (!string.IsNullOrEmpty(cachedToken)) this.Token = cachedToken;
             }
 
-            this.Token = string.IsNullOrEmpty(Token) ? await GetAccessToken() : Token;
-
-            _onAccessTokenGenerated?.Invoke(this.Token);
+            if (string.IsNullOrEmpty(Token))
+            {
+                this.Token = await GetAccessToken();
+                _onAccessTokenGenerated?.Invoke(this.Token);
+            }
+            else
+                this.Token = cachedToken;
 
             var bearer = $"Bearer {_userId} {Token}";
             return new HeaderParameter(KnownHeaders.Authorization, bearer);

@@ -4,18 +4,21 @@ Client library to communicate with [AliceBlue v2 REST API](https://v2api.alicebl
 OptionEdge client library provides simpler interface to connect to AliceBlue REST Api and live streaming services.
 
 ### **READ THIS CAREFULLY**
-Current [AliceBlue V2 Api](https://v2api.aliceblueonline.com/introduction) documentation and [Postman collection](https://v2api.aliceblueonline.com/introduction) provided has many inconsistencies. Abbreviated & inconsistent field names & data types are used many places. API seems to be still under development. I have tried my best to abstract away all the lower level details and provided more readable & consistent interface to interact with the Api. However, current REST Api is still not stable and Api parameters, data types & rest endpoint might change.
 
 Currently this library is in beta stage, please expect the methods, parameters to be changed based on the feedback.
-## Refer to my channel on API Usage Guide [ProfTheta - Your Guide to Options](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJPohEQ) (to be posted)
 
-## Please refer this Algo Trading Course on Youtube
-[Algo Trading Course](https://www.youtube.com/watch?v=o_WqyKSURr8) 
+## Refer to this Youtube video for API usage & integration guide  [ProfTheta - Your Guide to Options](https://www.youtube.com/watch?v=ncjVPPeSQ88)
+
+[![Watch the video](https://img.youtube.com/vi/ncjVPPeSQ88/mqdefault.jpg)](https://www.youtube.com/watch?v=ncjVPPeSQ88)
+
+
+## Refer to this video for free course on Algo Trading using broker APIs
+[Algo Trading Course](https://www.youtube.com/watch?v=o_WqyKSURr8)
 
 
 ## Requirements
 
-This library targets **netstandard2.0** and can be used with .**Net Core 2.0 and above** & **.Net Framework 4.6 and above**.
+This library targets `netstandard2.0` and can be used with `.Net Core 2.0 and above` & `.Net Framework 4.6 and above`.
 
 ## Getting Started
 
@@ -33,7 +36,7 @@ enable logging flag is set to true during the initialization, client library wil
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.1-beta
+Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.3-beta
 ```
 
 ## Sample project
@@ -42,11 +45,18 @@ Please refer the sample project `FeaturesDemo.cs` which demonstrate the capabili
 ## Getting Started guide on Youtube
 Please refer this [Youtube](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJPohEQ) (posting soon) video to get started using the library by creating a new project and calling the provided methods from the library for placing orders, getting order & trade history, historical data & live quotes. 
 
+## Import namespaces
+```csharp
+using OptionEdge.API.AliceBlue;
+using OptionEdge.API.AliceBlue.Records;
+```
+
 ## Initialize
 
 ```csharp
+       
 // Create new instance of AliceBlue client library
-_aliceBlue = new AliceBlue(_settings.UserId, _settings.ApiKey, enableLogging: _settings.EnableLogging,
+var_aliceBlue = new AliceBlue(_settings.UserId, _settings.ApiKey, enableLogging: _settings.EnableLogging,
     onAccessTokenGenerated: (accessToken) =>
 {
     // Store the generated access token to database or file store
@@ -67,7 +77,7 @@ _aliceBlue = new AliceBlue(_settings.UserId, _settings.ApiKey, enableLogging: _s
 ```csharp
 // Create Ticker instance
 // No need to provide the userId, apiKey, it will be automatically set
-_ticker = _aliceBlue.CreateTicker();
+var _ticker = _aliceBlue.CreateTicker();
 
 // Setup event handlers
 _ticker.OnTick += _ticker_OnTick;

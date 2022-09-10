@@ -7,11 +7,11 @@ namespace OptionEdge.API.AliceBlue.Samples
     {
         static void Main(string[] args)
         {
-            FeaturesDemo demo = new FeaturesDemo();
-            demo.Run();
+            // FeaturesDemo demo = new FeaturesDemo();
+            // demo.Run();
 
-            //DevTest demo = new DevTest();
-            //demo.Run();
+            DevTest demo = new DevTest();
+            demo.Run();
         }
 
     }
