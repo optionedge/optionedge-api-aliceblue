@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace OptionEdge.API.AliceBlue.Records
 {
-    public struct Contract
+    public class Contract
     {
         public string Exchange { get; set; }
 

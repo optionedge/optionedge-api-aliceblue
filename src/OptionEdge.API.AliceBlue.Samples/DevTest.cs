@@ -75,8 +75,9 @@ namespace OptionEdge.API.AliceBlue.Samples
 
                 //_ticker.Connect();
 
-                var openInterest = _aliceBlue.GetOpenInterest(Constants.EXCHANGE_NFO, new int[] { 35042, 37342 });
+                // var openInterest = _aliceBlue.GetOpenInterest(Constants.EXCHANGE_NFO, new int[] { 35042, 37342 });
 
+                var contracts = _aliceBlue.GetMasterContracts(Constants.EXCHANGE_NFO).Result;
 
 
             }
