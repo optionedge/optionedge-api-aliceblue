@@ -15,7 +15,7 @@ using RestSharp.Serializers.Json;
 
 namespace OptionEdge.API.AliceBlue
 {
-    public class AliceBlue : IAliceBlue
+    public class AliceBlue
     {
         string _baseUrl = "https://a3.aliceblueonline.com/rest/AliceBlueAPIService/api";
         string _websocketUrl = "wss://ws1.aliceblueonline.com/NorenWS";
@@ -81,11 +81,20 @@ namespace OptionEdge.API.AliceBlue
 
             _restClient = new RestClient(options)
             {
-                Authenticator = new AliceBlueAuthenticator(_userId, _apiKey, _baseUrl, _urls["auth.encryption.key"], _urls["auth.session.id"], enableLogging, (accessToken) =>
+                Authenticator = new AliceBlueAuthenticator(_userId, 
+                _apiKey, 
+                _baseUrl, 
+                _urls["auth.encryption.key"], 
+                _urls["auth.session.id"], 
+                enableLogging, (accessToken) =>
+                {                    
+                    onAccessTokenGenerated?.Invoke(accessToken);
+                }, 
+                cachedAccessTokenProvider,
+                (accessToken) =>
                 {
                     _accessToken = accessToken;
-                    onAccessTokenGenerated?.Invoke(accessToken);
-                }, cachedAccessTokenProvider)
+                })
             };
         }
 
@@ -126,38 +135,38 @@ namespace OptionEdge.API.AliceBlue
             return Utils.GetSHA256(Utils.GetSHA256(_accessToken));
         }
 
-        public FundsResult[] GetFunds()
+        public virtual FundsResult[] GetFunds()
         {
             return ExecuteGet<FundsResult[]>(_urls["funds.limits"]);
         }
 
         // Not working - making it private
-        public SquareOffPositionResult SquareOffPosition(SquareOffPositionParams squareOffPositionParams)
+        public virtual SquareOffPositionResult SquareOffPosition(SquareOffPositionParams squareOffPositionParams)
         {
             return ExecutePost<SquareOffPositionResult>(_urls["square.off.position"], squareOffPositionParams);
         }
 
-        public OrderHistoryResult[] GetOrderHistory(string orderNumber)
+        public virtual OrderHistoryResult[] GetOrderHistory(string orderNumber)
         {
             return ExecutePost<OrderHistoryResult[]>(_urls["order.history"], new OrderHistoryParams { OrderNumber = orderNumber });
         }
 
-        public OrderBookResult[] GetOrderBook()
+        public virtual OrderBookResult[] GetOrderBook()
         {
             return ExecuteGet<OrderBookResult[]>(_urls["order.book"]);
         }
 
-        public TradeBookResult[] GetTradeBook()
+        public virtual TradeBookResult[] GetTradeBook()
         {
             return ExecuteGet<TradeBookResult[]>(_urls["trade.book"]);
         }
 
-        public HistoryDataResult GetHistoricalData(HistoryDataParams historyDataParams)
+        public virtual HistoryDataResult GetHistoricalData(HistoryDataParams historyDataParams)
         {
             return ExecutePost<HistoryDataResult>(_urls["history"], historyDataParams);
         }
 
-        public HistoryDataResult GetHistoricalData(string exchange, int instrumentToken, DateTime from, DateTime to, string resolution)
+        public virtual HistoryDataResult GetHistoricalData(string exchange, int instrumentToken, DateTime from, DateTime to, string resolution)
         {
             HistoryDataParams historyDataParams = new HistoryDataParams
             {
@@ -171,12 +180,12 @@ namespace OptionEdge.API.AliceBlue
             return GetHistoricalData(historyDataParams);
         }
 
-        public ModifyOrderResult ModifyOrder(ModifyOrderParams modifyOrderParams)
+        public virtual ModifyOrderResult ModifyOrder(ModifyOrderParams modifyOrderParams)
         {
             return ExecutePost<ModifyOrderResult>(_urls["order.modify"], modifyOrderParams);
         }
 
-        public CancelOrderResult CancelOrder(string orderNumber)
+        public virtual CancelOrderResult CancelOrder(string orderNumber)
         {
             return ExecutePost<CancelOrderResult>(_urls["order.cancel"], new CancelOrderParams
             {
@@ -184,17 +193,17 @@ namespace OptionEdge.API.AliceBlue
             });
         }
 
-        public ExitBracketOrderResult ExitBracketOrder(ExitBracketOrderParams exitBracketOrderParams)
+        public virtual ExitBracketOrderResult ExitBracketOrder(ExitBracketOrderParams exitBracketOrderParams)
         {
             return ExecutePost<ExitBracketOrderResult>(_urls["order.bracket.exit"], exitBracketOrderParams);
         }
 
-        public ExitCoverOrderResult ExitCoverOrder(ExitCoverOrderParams exitCoverOrder)
+        public virtual ExitCoverOrderResult ExitCoverOrder(ExitCoverOrderParams exitCoverOrder)
         {
             return ExecutePost<ExitCoverOrderResult>(_urls["order.cover.exit"], exitCoverOrder);
         }
 
-        public OpenInterestResult[] GetOpenInterest(string exchange, int[] tokens)
+        public virtual OpenInterestResult[] GetOpenInterest(string exchange, int[] tokens)
         {
             var openInterestParams = new OpenInterestParams
             {
@@ -208,7 +217,7 @@ namespace OptionEdge.API.AliceBlue
             return GetOpenInterest(openInterestParams);
         }
 
-        public OpenInterestResult[] GetOpenInterest(OpenInterestParams tokens)
+        public virtual OpenInterestResult[] GetOpenInterest(OpenInterestParams tokens)
         {
             var openInterestParamsInternal = new OpenInterestParamsInternal
             {
@@ -219,21 +228,21 @@ namespace OptionEdge.API.AliceBlue
             return ExecutePost<OpenInterestResult[]>(_urls["scrip.open.interest"], openInterestParamsInternal);
         }
 
-        public AccountDetails GetAccountDetails()
+        public virtual AccountDetails GetAccountDetails()
         {
             return ExecuteGet<AccountDetails>(_urls["profile.account"]);
         }
 
-        public PositionBookResult[] GetPositionBookDayWise()
+        public virtual PositionBookResult[] GetPositionBookDayWise()
         {
             return GetPosition(Constants.POSITION_DAYWISE);
         }
-        public PositionBookResult[] GetPositionBookNetWise()
+        public virtual PositionBookResult[] GetPositionBookNetWise()
         {
             return GetPosition(Constants.POSITION_NETWISE);
         }
 
-        private PositionBookResult[] GetPosition(string retentionType)
+        protected virtual PositionBookResult[] GetPosition(string retentionType)
         {
             return ExecutePost<PositionBookResult[]>(
                 _urls["portfolio.position.book"],
@@ -242,7 +251,7 @@ namespace OptionEdge.API.AliceBlue
                     RetentionType = retentionType
                 });
         }
-        public ScriptQuoteResult GetScripQuote(string exchange, int instrumentToken)
+        public virtual ScriptQuoteResult GetScripQuote(string exchange, int instrumentToken)
         {
             var res = ExecutePost<ScriptQuoteResult>(
                 _urls["scrip.quote"],
@@ -255,40 +264,40 @@ namespace OptionEdge.API.AliceBlue
             return res;
         }
 
-        public HoldingsResult GetHoldings()
+        public virtual HoldingsResult GetHoldings()
         {
             return ExecuteGet<HoldingsResult>(_urls["portfolio.holdings"]);
         }
 
-        public PlaceRegularOrderResult PlaceOrder(PlaceRegularOrderParams order)
+        public virtual PlaceRegularOrderResult PlaceOrder(PlaceRegularOrderParams order)
         {
             var placeOrderResult = PlaceOrder(new PlaceRegularOrderParams[] { order });
             return placeOrderResult != null ? placeOrderResult[0] : null;
         }
 
-        public PlaceCoverOrderResult PlaceOrder(PlaceCoverOrderParams order)
+        public virtual PlaceCoverOrderResult PlaceOrder(PlaceCoverOrderParams order)
         {
             var placeOrderResult = PlaceOrder(new PlaceCoverOrderParams[] { order });
             return placeOrderResult != null ? placeOrderResult[0] : null;
         }
 
-        public PlaceBracketOrderResult PlaceOrder(PlaceBracketOrderParams order)
+        public virtual PlaceBracketOrderResult PlaceOrder(PlaceBracketOrderParams order)
         {
             var placeOrderResult = PlaceOrder(new PlaceBracketOrderParams[] { order });
             return placeOrderResult != null ? placeOrderResult[0] : null;
         }
 
-        public PlaceCoverOrderResult[] PlaceOrder(PlaceCoverOrderParams[] orders)
+        public virtual PlaceCoverOrderResult[] PlaceOrder(PlaceCoverOrderParams[] orders)
         {
             return PlaceCoverOrder(orders);
         }
 
-        public PlaceBracketOrderResult[] PlaceOrder(PlaceBracketOrderParams[] orders)
+        public virtual PlaceBracketOrderResult[] PlaceOrder(PlaceBracketOrderParams[] orders)
         {
             return PlaceBracketOrder(orders);
         }
 
-        public PlaceRegularOrderResult[] PlaceOrder(PlaceRegularOrderParams[] orders)
+        public virtual PlaceRegularOrderResult[] PlaceOrder(PlaceRegularOrderParams[] orders)
         {
             foreach (var order in orders)
             {
@@ -312,11 +321,11 @@ namespace OptionEdge.API.AliceBlue
             return ExecutePost<PlaceRegularOrderResult[]>(_urls["order.place"], orders);
         }
 
-        public PlaceCoverOrderResult PlaceCoverOrder(PlaceCoverOrderParams order)
+        public virtual PlaceCoverOrderResult PlaceCoverOrder(PlaceCoverOrderParams order)
         {
             return PlaceCoverOrder(new PlaceCoverOrderParams[] { order })[0];
         }
-        public PlaceCoverOrderResult[] PlaceCoverOrder(PlaceCoverOrderParams[] orders)
+        public virtual PlaceCoverOrderResult[] PlaceCoverOrder(PlaceCoverOrderParams[] orders)
         {
             foreach (var order in orders)
             {
@@ -343,12 +352,12 @@ namespace OptionEdge.API.AliceBlue
             return ExecutePost<PlaceCoverOrderResult[]>(_urls["order.place"], orders);
         }
 
-        public PlaceBracketOrderResult PlaceBracketOrder(PlaceBracketOrderParams order)
+        public virtual PlaceBracketOrderResult PlaceBracketOrder(PlaceBracketOrderParams order)
         {
             return PlaceBracketOrder(new PlaceBracketOrderParams[] { order })[0];
         }
 
-        public PlaceBracketOrderResult[] PlaceBracketOrder(PlaceBracketOrderParams[] orders)
+        public virtual PlaceBracketOrderResult[] PlaceBracketOrder(PlaceBracketOrderParams[] orders)
         {
             foreach (var order in orders)
             {
@@ -378,7 +387,7 @@ namespace OptionEdge.API.AliceBlue
             return ExecutePost<PlaceBracketOrderResult[]>(_urls["order.place"], orders);
         }
 
-        private void PlaceOrderValidateRequiredArguments(PlaceRegularOrderParams order)
+        protected virtual void PlaceOrderValidateRequiredArguments(PlaceRegularOrderParams order)
         {
             if (string.IsNullOrEmpty(order.TradingSymbol))
                 throw new ArgumentNullException("Trading symbol required.");
@@ -402,7 +411,7 @@ namespace OptionEdge.API.AliceBlue
         /// <param name="exchange"></param>
         /// <param name="filePath"></param>
         /// <exception cref="DirectoryNotFoundException">File directory should exists.</exception>
-        public void SaveMasterContracts(string exchange, string filePath)
+        public virtual void SaveMasterContracts(string exchange, string filePath)
         {
             var result = DownloadMasterContract(exchange, (stream) =>
              {
@@ -412,7 +421,7 @@ namespace OptionEdge.API.AliceBlue
              }).Result;
         }
 
-        private async Task<bool> DownloadMasterContract(string exchange, Action<Stream> processStream)
+        protected virtual async Task<bool> DownloadMasterContract(string exchange, Action<Stream> processStream)
         {
             HttpClient httpClient = new HttpClient();
             httpClient.Timeout = new TimeSpan(0, 0, 30);
@@ -434,7 +443,7 @@ namespace OptionEdge.API.AliceBlue
             return true;
         }
 
-        public async Task<IList<Contract>> GetMasterContracts(string exchange)
+        public virtual async Task<IList<Contract>> GetMasterContracts(string exchange)
         {
             List<Contract> contracts = new List<Contract>(100000);
 

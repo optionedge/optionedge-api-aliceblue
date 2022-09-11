@@ -13,7 +13,7 @@ namespace OptionEdge.API.AliceBlue.Samples
         // apiKey, userId, logging setting
         static Settings _settings;
 
-        static IAliceBlue _aliceBlue;
+        static AliceBlue _aliceBlue;
         static Ticker _ticker;
 
         static string _cachedTokenFile = "cached_token.txt";

@@ -19,7 +19,9 @@ namespace OptionEdge.API.AliceBlue
 
         Action<string> _onAccessTokenGenerated;
         Func<string> _cachedAccessTokenProvider;
-        public AliceBlueAuthenticator(string userId, string apiKey, string baseUrl, string encryptionKeyEndpoint, string sessionIdEndpoint, bool enableLogging = false, Action<string> onAccessTokenGenerated = null, Func<string> cachedAccessTokenProvider = null) : base("")
+        Action<string> _onAccessTokenUpdated;
+
+        public AliceBlueAuthenticator(string userId, string apiKey, string baseUrl, string encryptionKeyEndpoint, string sessionIdEndpoint, bool enableLogging = false, Action<string> onAccessTokenGenerated = null, Func<string> cachedAccessTokenProvider = null, Action<string> onAccessTokenUpdated = null) : base("")
         {
             _userId = userId.ToUpper();
             _apiKey = apiKey;
@@ -29,25 +31,26 @@ namespace OptionEdge.API.AliceBlue
             _enableLogging = enableLogging;
             _onAccessTokenGenerated = onAccessTokenGenerated;
             _cachedAccessTokenProvider = cachedAccessTokenProvider;
+            _onAccessTokenUpdated = onAccessTokenUpdated;
         }
 
         protected override async ValueTask<Parameter> GetAuthenticationParameter(string accessToken)
         {
-            var cachedToken = string.Empty;
+            var cachedToken = this.Token;
 
             if (string.IsNullOrEmpty(this.Token) && _cachedAccessTokenProvider != null)
             {
                 cachedToken = _cachedAccessTokenProvider?.Invoke();
-                if (!string.IsNullOrEmpty(cachedToken)) this.Token = cachedToken;
+                this.Token = cachedToken;
             }
 
-            if (string.IsNullOrEmpty(Token))
+            if (string.IsNullOrEmpty(this.Token))
             {
                 this.Token = await GetAccessToken();
                 _onAccessTokenGenerated?.Invoke(this.Token);
             }
-            else
-                this.Token = cachedToken;
+
+            _onAccessTokenUpdated?.Invoke(this.Token);
 
             var bearer = $"Bearer {_userId} {Token}";
             return new HeaderParameter(KnownHeaders.Authorization, bearer);

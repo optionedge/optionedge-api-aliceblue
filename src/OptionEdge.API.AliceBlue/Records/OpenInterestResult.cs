@@ -26,7 +26,7 @@ namespace OptionEdge.API.AliceBlue.Records
         public string DefaultMarketProtectionValue { get; set; }
 
         [JsonPropertyName("BestBuySize")]
-        public decimal BestBuySize { get; set; }
+        public string BestBuySize { get; set; }
 
         [JsonPropertyName("noMktPro")]
         public string noMktPro { get; set; }
@@ -47,7 +47,7 @@ namespace OptionEdge.API.AliceBlue.Records
         public string LastTradedTime { get; set; }
 
         [JsonPropertyName("BestSellSize")]
-        public decimal BestSellSize { get; set; }
+        public string BestSellSize { get; set; }
 
         [JsonPropertyName("low")]
         public decimal Low { get; set; }
@@ -80,10 +80,10 @@ namespace OptionEdge.API.AliceBlue.Records
         public decimal Multiplier { get; set; }
 
         [JsonPropertyName("totalbuyqty")]
-        public int TotalBuyQty { get; set; }
+        public string TotalBuyQty { get; set; }
 
         [JsonPropertyName("totalsellqty")]
-        public int TotalSellQty { get; set; }
+        public string TotalSellQty { get; set; }
 
         [JsonPropertyName("ltp")]
         public decimal Ltp { get; set; }
@@ -116,7 +116,7 @@ namespace OptionEdge.API.AliceBlue.Records
         public string Instrument { get; set; }
 
         [JsonPropertyName("TradeVolume")]
-        public int TradeVolume { get; set; }
+        public string TradeVolume { get; set; }
 
         [JsonPropertyName("bodlot")]
         public decimal LotSize { get; set; }
