@@ -163,18 +163,64 @@ namespace OptionEdge.API.AliceBlue
 
         public virtual HistoryDataResult GetHistoricalData(HistoryDataParams historyDataParams)
         {
-            return ExecutePost<HistoryDataResult>(_urls["history"], historyDataParams);
+            var historicalDataBaseUrl = "https://a3.aliceblueonline.com/rest/AliceBlueAPIService/chart/history";
+
+            HistoryDataResult result = null;
+
+            using (var restClient = new RestClient(historicalDataBaseUrl))
+            {
+                var request = new RestRequest();
+                request.Method = Method.Get;
+                request.AddQueryParameter("symbol", historyDataParams.InstrumentToken);
+                request.AddQueryParameter("from", historyDataParams.From);
+                request.AddQueryParameter("to", historyDataParams.To);
+                request.AddQueryParameter("resolution", historyDataParams.Interval);
+                request.AddQueryParameter("user", _userId);
+
+                if (historyDataParams.Index)
+                {
+                    request.AddQueryParameter("exchange", $"{historyDataParams.Exchange}::index");
+                }
+                else
+                {
+                    request.AddQueryParameter("exchange", historyDataParams.Exchange);
+                }
+
+                var response = restClient.ExecuteGet<HistoryDataResult>(request);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.OK && response.Data != null)
+                {
+                    result = response.Data;
+
+                    for (int i=0; i< response.Data.Close.Length; i++)
+                    {
+                        result.Candles.Add(new HistoryCandle
+                        {
+                            Open = response.Data.Open[i],
+                            Close = response.Data.Close[i],
+                            High = response.Data.High[i],   
+                            Low = response.Data.Low[i],
+                            Volume = response.Data.Volume[i],
+                            IV  = response.Data.IV,
+                            TimeData = response.Data.Time[i]
+                        });
+                    }
+                }
+            }
+            
+            return result;
         }
 
-        public virtual HistoryDataResult GetHistoricalData(string exchange, int instrumentToken, DateTime from, DateTime to, string resolution)
+        public virtual HistoryDataResult GetHistoricalData(string exchange, int instrumentToken, DateTime from, DateTime to, string interval, bool index = false)
         {
             HistoryDataParams historyDataParams = new HistoryDataParams
             {
                 Exchange = exchange,
                 InstrumentToken = instrumentToken,
-                From = ((DateTimeOffset)from).ToUnixTimeMilliseconds(),
-                To = ((DateTimeOffset)to).ToUnixTimeMilliseconds(),
-                Resolution = resolution
+                From = ((DateTimeOffset)from).ToUnixTimeSeconds(),
+                To = ((DateTimeOffset)to).ToUnixTimeSeconds(),
+                Interval = interval,
+                Index = index
             };
 
             return GetHistoricalData(historyDataParams);

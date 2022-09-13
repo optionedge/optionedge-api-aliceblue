@@ -5,25 +5,25 @@ namespace OptionEdge.API.AliceBlue
 {
     public class HistoryDataParams
     {
-        [JsonProperty("exchange")]
         public string Exchange;
 
-        [JsonProperty("token")]
         public int InstrumentToken;
 
-        [JsonProperty("resolution")]
-        public string Resolution;
+        /// <summary>
+        /// "1", "2", "3", "4", "5", "10", "15", "30", "60", "120", "180", "240", "D", "1W", "1M"
+        /// </summary>
+        public string Interval;
 
         /// <summary>
-        /// Unix Timestamp (milliseconds)
+        /// Unix Timestamp (seconds)
         /// </summary>
-        [JsonProperty("from")]
         public long From;
 
         /// <summary>
-        /// Unix Timestamp (milliseconds)
+        /// Unix Timestamp (seconds)
         /// </summary>
-        [JsonProperty("to")]
         public long To;
+
+        public bool Index { get; set; }
     }
 }
