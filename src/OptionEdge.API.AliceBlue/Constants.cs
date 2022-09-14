@@ -39,7 +39,20 @@ namespace OptionEdge.API.AliceBlue
         public const string SEGMENT_TYPE_ALL = "ALL";
 
         public const string HISTORICAL_DATA_RESOLUTION_1_MINUTE = "1";
-        public const string HISTORICAL_DATA_RESOLUTION_1_DAY = "1D";
+        public const string HISTORICAL_DATA_RESOLUTION_2_MINUTE = "2";
+        public const string HISTORICAL_DATA_RESOLUTION_3_MINUTE = "3";
+        public const string HISTORICAL_DATA_RESOLUTION_5_MINUTE = "5";
+        public const string HISTORICAL_DATA_RESOLUTION_10_MINUTE = "10";
+        public const string HISTORICAL_DATA_RESOLUTION_15_MINUTE = "15";
+        public const string HISTORICAL_DATA_RESOLUTION_30_MINUTE = "30";
+        public const string HISTORICAL_DATA_RESOLUTION_1_HOURS = "60";
+        public const string HISTORICAL_DATA_RESOLUTION_2_HOUR = "120";
+        public const string HISTORICAL_DATA_RESOLUTION_3_HOUR = "180";
+        public const string HISTORICAL_DATA_RESOLUTION_4_HOUR = "240";
+        public const string HISTORICAL_DATA_RESOLUTION_1_DAY = "D";
+        public const string HISTORICAL_DATA_RESOLUTION_1_WEEK = "1W";
+        public const string HISTORICAL_DATA_RESOLUTION_1_MONTH = "1M";
+
 
         internal const string EXCHANGE_SEGMENT_NSE_CM = "nse_cm";
         internal const string EXCHANGE_SEGMENT_BSE_CM = "base_cm";

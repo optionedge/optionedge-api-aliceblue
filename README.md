@@ -28,22 +28,22 @@ You have to first generate the Api Key from [ANT Web application](https://a3.ali
 
 Please note down the Api key & your Alice Blue User Id. You will be using the Api key & user id to initialize the client library. 
 
-It is a requirement from AliceBlue that you login to your account (ANT web) everyday before using the Api/Client library else REST calls will fail.
+**NOTE: User should Login through Web (a3.aliceblueonline.com) or Single Sign On (SSO) or Mobile at least once in a day, before connecting the API**
 
 ## Troubleshooting
-enable logging flag is set to true during the initialization, client library will log all the error/info messages to the console. This will help to troubleshoot any issues while integrating library with your project. You can disable this flag in production.
+While creating the instance of Alice Blue Api Client set enable logging parameter as true. Client library will log all the error/info messages to the console. This will help to troubleshoot any issues while integrating library with your project. You can disable this flag in production.
 
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.5-beta
+Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.6-beta
 ```
 
 ## Sample project
-Please refer the sample project `FeaturesDemo.cs` which demonstrate the capabilities of this library. 
+Please refer the sample `FeaturesDemo.cs` class in `OptionEdge.API.AliceBlue.Samples' project which demonstrate the capabilities of this library. 
 
 ## Getting Started guide on Youtube
-Please refer this [Youtube](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJPohEQ) (posting soon) video to get started using the library by creating a new project and calling the provided methods from the library for placing orders, getting order & trade history, historical data & live quotes. 
+Please refer this [Youtube](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJPohEQ) video to get started using the library by creating a new project and calling the provided methods from the library for placing orders, getting order & trade history, historical data & live quotes. 
 
 ## Import namespaces
 ```csharp
@@ -186,13 +186,6 @@ var funds = _aliceBlue.GetFunds();
 
 
 ## Historical Data
-
->1. Only Day and Minute data will be available. Other resolutions can be calculated on their own, based user preferences using these resolutions.
->2. Historical data API will be available from 5:30 PM (evening) to 8 AM (Next day morning) on weekdays (Monday to Friday). Historical data will not be available during market hours
->3. Historical data API will be available fully during weekends and holidays.
->4. For NSE segment, 2 years of historical data will be provided.
->5. For NFO, CDS and MCX segments, current expiry data will be provided.
->6. BSE, BCD and BFO Chart data will be added later.
 
 ```csharp
 var historicalCandles = _aliceBlue.GetHistoricalData(
