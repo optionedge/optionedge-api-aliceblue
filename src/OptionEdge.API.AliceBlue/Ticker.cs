@@ -45,6 +45,8 @@ namespace OptionEdge.API.AliceBlue
         public event OnReconnectHandler OnReconnect;
         public event OnNoReconnectHandler OnNoReconnect;
 
+        Func<int, bool> _shouldUnSubscribe = null;
+
         public Ticker(string userId, string accessToken, string socketUrl = null, bool reconnect = false, int reconnectInterval = 5, int reconnectTries = 50, bool debug = false)
         {
             _debug = debug;
@@ -71,6 +73,11 @@ namespace OptionEdge.API.AliceBlue
             _timer = new System.Timers.Timer();
             _timer.Elapsed += _onTimerTick;
             _timer.Interval = 1000;
+        }
+
+        internal void SetShouldUnSubscribeHandler(Func<int,bool> shouldUnSubscribe )
+        {
+            _shouldUnSubscribe = shouldUnSubscribe; 
         }
 
         private void _onError(string Message)
@@ -215,7 +222,7 @@ namespace OptionEdge.API.AliceBlue
             if (IsConnected)
                 _ws.Send(requestJson);
 
-            foreach (SubscriptionToken token in tokens)
+            foreach (SubscriptionToken token in subscriptionRequst.SubscriptionTokens)
             {
                 if (_subscribedTokens.ContainsKey(token))
                     _subscribedTokens[token] = mode; 
@@ -241,7 +248,7 @@ namespace OptionEdge.API.AliceBlue
 
             var request = new UnsubscribeMarketDataRequest
             {
-                SubscribedTokens = tokens,
+                SubscribedTokens = tokens.Where(x => _shouldUnSubscribe != null ? _shouldUnSubscribe.Invoke(x.Token) : true).ToArray(),
             };
 
             var requestJson = JsonSerializer.ToJsonString(request);
@@ -251,7 +258,7 @@ namespace OptionEdge.API.AliceBlue
             if (IsConnected)
                 _ws.Send(requestJson);
 
-            foreach (SubscriptionToken token in tokens)
+            foreach (SubscriptionToken token in request.SubscribedTokens)
                 if (_subscribedTokens.ContainsKey(token))
                     _subscribedTokens.Remove(token);
         }

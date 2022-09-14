@@ -75,11 +75,11 @@ namespace OptionEdge.API.AliceBlue.Samples
 
                 //_ticker.Connect();
 
-                // var openInterest = _aliceBlue.GetOpenInterest(Constants.EXCHANGE_NFO, new int[] { 35042, 37342 });
+                var openInterest = _aliceBlue.GetOpenInterest(Constants.EXCHANGE_NFO, new int[] { 36303});
 
                 // var contracts = _aliceBlue.GetMasterContracts(Constants.EXCHANGE_NFO).Result;
 
-                var history = _aliceBlue.GetHistoricalData(Constants.EXCHANGE_NFO, 37516, DateTime.Now.AddDays(-3), DateTime.Now, "5", false);
+                // var history = _aliceBlue.GetHistoricalData(Constants.EXCHANGE_NFO, 37516, DateTime.Now.AddDays(-3), DateTime.Now, "5", false);
 
             }
             catch (Exception ex)

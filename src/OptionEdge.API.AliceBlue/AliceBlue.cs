@@ -98,12 +98,24 @@ namespace OptionEdge.API.AliceBlue
             };
         }
 
-        public Ticker CreateTicker()
+        private Ticker _ticker;
+        public virtual Ticker CreateTicker()
         {
+            // Only single ticker instance allowed
+            if (_ticker != null) return _ticker;
+
             CreateWebsocketSession();
 
-            return new Ticker(_userId, GetWebsocketAccessToken(), socketUrl: _websocketUrl, debug: _enableLogging);
+            _ticker =  new Ticker(_userId, GetWebsocketAccessToken(), socketUrl: _websocketUrl, debug: _enableLogging);
+
+            return _ticker;
         }
+
+        protected void SetShouldUnSubscribeHandler(Func<int, bool> shouldUnSubscribe)
+        {
+            _ticker.SetShouldUnSubscribeHandler(shouldUnSubscribe);
+        }
+
 
         private void CreateWebsocketSession()
         {
