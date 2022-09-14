@@ -63,6 +63,7 @@ namespace OptionEdge.API.AliceBlue.Samples
                 _ticker.OnError += _ticker_OnError;
                 _ticker.OnNoReconnect += _ticker_OnNoReconnect;
                 _ticker.OnReconnect += _ticker_OnReconnect;
+                _ticker.OnReady += _ticker_OnReady;
 
                 // Connect the ticker to start receiving the live feeds
                 // DO NOT FORGOT TO CONNECT else you will not receive any feed
@@ -323,6 +324,10 @@ namespace OptionEdge.API.AliceBlue.Samples
             Console.ReadLine();
         }
 
+        private void _ticker_OnReady()
+        {
+            Console.WriteLine("Socket connection authenticated. Ready to live stream feeds.");
+        }
 
         private static void _ticker_OnTick(Tick TickData)
         {

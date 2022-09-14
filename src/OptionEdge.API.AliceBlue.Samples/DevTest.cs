@@ -60,22 +60,23 @@ namespace OptionEdge.API.AliceBlue.Samples
 
                 // Create Ticker instance
                 // No need to provide the userId, apiKey, it will be automatically set
-                //_ticker = _aliceBlue.CreateTicker();
+                _ticker = _aliceBlue.CreateTicker();
 
-                //// Setup event handlers
-                //_ticker.OnTick += _ticker_OnTick;
-                //_ticker.OnConnect += _ticker_OnConnect;
-                //_ticker.OnClose += _ticker_OnClose;
-                //_ticker.OnError += _ticker_OnError;
-                //_ticker.OnNoReconnect += _ticker_OnNoReconnect;
-                //_ticker.OnReconnect += _ticker_OnReconnect;
+                // Setup event handlers
+                _ticker.OnTick += _ticker_OnTick;
+                _ticker.OnConnect += _ticker_OnConnect;
+                _ticker.OnClose += _ticker_OnClose;
+                _ticker.OnError += _ticker_OnError;
+                _ticker.OnNoReconnect += _ticker_OnNoReconnect;
+                _ticker.OnReconnect += _ticker_OnReconnect;
+                _ticker.OnReady += _ticker_OnReady;
 
                 // Connect the ticker to start receiving the live feeds
                 // DO NOT FORGOT TO CONNECT else you will not receive any feed
 
-                //_ticker.Connect();
+                _ticker.Connect();
 
-                var openInterest = _aliceBlue.GetOpenInterest(Constants.EXCHANGE_NFO, new int[] { 36303});
+                // var openInterest = _aliceBlue.GetOpenInterest(Constants.EXCHANGE_NFO, new int[] { 36303});
 
                 // var contracts = _aliceBlue.GetMasterContracts(Constants.EXCHANGE_NFO).Result;
 
@@ -90,7 +91,10 @@ namespace OptionEdge.API.AliceBlue.Samples
             Console.ReadLine();
         }
 
-
+        private void _ticker_OnReady()
+        {
+            Console.WriteLine("Socket connection authenticated. Ready to live stream feeds.");
+        }
 
         private static void _ticker_OnTick(Tick TickData)
         {

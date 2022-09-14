@@ -36,7 +36,7 @@ While creating the instance of Alice Blue Api Client set enable logging paramete
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.8-beta
+Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.10-beta
 ```
 
 ## Sample project
@@ -86,6 +86,7 @@ _ticker.OnClose += _ticker_OnClose;
 _ticker.OnError += _ticker_OnError;
 _ticker.OnNoReconnect += _ticker_OnNoReconnect;
 _ticker.OnReconnect += _ticker_OnReconnect;
+_ticker.OnReady += _ticker_OnReady;
 
 // Connect the ticker to start receiving the live feeds
 // DO NOT FORGOT TO CONNECT else you will not receive any feed
@@ -334,6 +335,11 @@ if (placeRegularOrderResult != null && placeRegularOrderResult.Status == Constan
 
 ## Web Socket event handlers
 ```csharp
+private void _ticker_OnReady()
+{
+    Console.WriteLine("Socket connection authenticated. Ready to live stream feeds.");
+}
+
 private static void _ticker_OnTick(Tick TickData)
 {
     Console.WriteLine(JsonConvert.SerializeObject(TickData));

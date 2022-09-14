@@ -27,18 +27,23 @@ namespace OptionEdge.API.AliceBlue
 
         private IWebSocket _ws;
 
+        bool _isReady;
+
         /// <summary>
         /// Token -> Mode Mapping
         /// </summary>
         private Dictionary<SubscriptionToken, string> _subscribedTokens;
 
         public delegate void OnConnectHandler();
+        public delegate void OnReadyHandler();
         public delegate void OnCloseHandler();
         public delegate void OnTickHandler(Tick TickData);
         public delegate void OnErrorHandler(string Message);
         public delegate void OnReconnectHandler();
         public delegate void OnNoReconnectHandler();
+        
         public event OnConnectHandler OnConnect;
+        public event OnReadyHandler OnReady;
         public event OnCloseHandler OnClose;
         public event OnTickHandler OnTick;
         public event OnErrorHandler OnError;
@@ -103,6 +108,10 @@ namespace OptionEdge.API.AliceBlue
                 var data = JsonSerializer.Deserialize<dynamic>(Data);
                 if (data["t"] == "ck")
                 {
+                    _isReady = true;
+
+                    OnReady();
+
                     if (_debug)
                         Utils.LogMessage("Connection acknowledgement received. Websocket connected.");
                 }
@@ -153,6 +162,11 @@ namespace OptionEdge.API.AliceBlue
         public bool IsConnected
         {
             get { return _ws.IsConnected(); }
+        }
+
+        public bool IsReady
+        {
+            get { return _isReady; }
         }
 
         public void Connect()
