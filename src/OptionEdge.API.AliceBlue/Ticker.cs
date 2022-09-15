@@ -114,6 +114,7 @@ namespace OptionEdge.API.AliceBlue
                 exchangeStore.TryGetValue(tick.Token.Value, out storedTick);
 
                 tick.PreviousDayClose = storedTick.PreviousDayClose;
+                tick.ChangeValue = storedTick.ChangeValue;
             }
         }
 
@@ -144,6 +145,9 @@ namespace OptionEdge.API.AliceBlue
                 tick.ChangeValue = changeValue;
 
                 _tickStore[tick.Exchange].TryAdd(tick.Token.Value, tick);
+            } else
+            {
+                FormatTick(ref tick);
             }
         }
 
