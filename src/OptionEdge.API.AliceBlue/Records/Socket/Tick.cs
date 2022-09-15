@@ -105,6 +105,8 @@ namespace OptionEdge.API.AliceBlue.Records
         public DateTime? FeedTime { get; set; }
 
         public decimal? PercentageChange { get; set; }
+        
+        public decimal PreviousDayClose { get; set; }
 
         [JsonFormatter(typeof(decimal))]
         public decimal? ChangeValue { get; set; }

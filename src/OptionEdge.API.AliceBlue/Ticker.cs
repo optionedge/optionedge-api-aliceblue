@@ -1,5 +1,6 @@
 ﻿using OptionEdge.API.AliceBlue.Records;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.WebSockets;
@@ -87,15 +88,65 @@ namespace OptionEdge.API.AliceBlue
 
         private void _onError(string Message)
         {
+            _tickStore?.Clear();
+            _timerTick = _interval;
+            _timer.Start();
             OnError?.Invoke(Message);
         }
 
         private void _onClose()
         {
+            _tickStore?.Clear();
             _timer.Stop();
             OnClose?.Invoke();
         }
        
+        ConcurrentDictionary<string, ConcurrentDictionary<int, Tick>> _tickStore = new ConcurrentDictionary<string, ConcurrentDictionary<int, Tick>>();
+
+        private void FormatTick(ref Tick tick)
+        {
+            if (_tickStore.ContainsKey(tick.Exchange) && _tickStore[tick.Exchange].ContainsKey(tick.Token.Value))
+            {
+                ConcurrentDictionary<int, Tick> exchangeStore = null;
+                Tick storedTick = null;
+
+                _tickStore.TryGetValue(tick.Exchange, out exchangeStore);
+                exchangeStore.TryGetValue(tick.Token.Value, out storedTick);
+
+                tick.PreviousDayClose = storedTick.PreviousDayClose;
+            }
+        }
+
+        private void AddToTickStore(Tick tick)
+        {
+            if (!_tickStore.ContainsKey(tick.Exchange))
+                _tickStore.TryAdd(tick.Exchange, new ConcurrentDictionary<int, Tick>());
+
+            if (!_tickStore[tick.Exchange].ContainsKey(tick.Token.Value))
+            {
+                decimal close;
+                decimal changeValue;
+                if (tick.Close.HasValue && tick.Close.Value != 0)
+                {
+                    close = tick.Close.Value;
+                    changeValue = tick.LastTradedPrice.Value - tick.Close.Value;
+                }
+                else
+                {
+                    changeValue = tick.LastTradedPrice.Value * (tick.PercentageChange.Value / 100);
+                    if (Math.Sign(tick.PercentageChange.Value) == 1)
+                        close = tick.LastTradedPrice.Value - changeValue;
+                    else
+                        close = tick.LastTradedPrice.Value + changeValue;
+                }
+
+                tick.PreviousDayClose = close;
+                tick.ChangeValue = changeValue;
+
+                _tickStore[tick.Exchange].TryAdd(tick.Token.Value, tick);
+            }
+        }
+
         private void _onData(byte[] Data, int Count, string MessageType)
         {
             _timerTick = _interval;
@@ -112,13 +163,24 @@ namespace OptionEdge.API.AliceBlue
 
                     OnReady();
 
+                    if (_subscribedTokens.Count > 0)
+                        ReSubscribe();
+
                     if (_debug)
                         Utils.LogMessage("Connection acknowledgement received. Websocket connected.");
                 }
-                else if (data["t"] == "tk" || data["t"] == "tf" || data["t"] == "dk" || data["t"] == "df")
+                else if (data["t"] == "tk" || data["t"] == "dk")
                 {
-                    OnTick(new Tick(data));
-                } else
+                    Tick tick = new Tick(data);
+                    AddToTickStore(tick);
+                    OnTick(tick);
+                } else if (data["t"] == "tf" || data["t"] == "df")
+                {
+                    Tick tick = new Tick(data);
+                    FormatTick(ref tick);
+                    OnTick(tick);
+                }
+                else
                 {
                     if (_debug)
                         Utils.LogMessage($"Unknown feed type: {data["t"]}");
@@ -154,8 +216,7 @@ namespace OptionEdge.API.AliceBlue
             _retryCount = 0;
             _timerTick = _interval;
             _timer.Start();
-            if (_subscribedTokens.Count > 0)
-                ReSubscribe();
+
             OnConnect?.Invoke();
         }
 
@@ -181,6 +242,7 @@ namespace OptionEdge.API.AliceBlue
 
         public void Close()
         {
+            _tickStore?.Clear();
             _timer.Stop();
             _ws.Close();
         }

@@ -71,6 +71,8 @@ namespace OptionEdge.API.AliceBlue.Samples
                 _ticker.OnReconnect += _ticker_OnReconnect;
                 _ticker.OnReady += _ticker_OnReady;
 
+                _ticker.EnableReconnect();
+
                 // Connect the ticker to start receiving the live feeds
                 // DO NOT FORGOT TO CONNECT else you will not receive any feed
 
