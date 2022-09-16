@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using LumenWorks.Framework.IO.Csv;
 using Newtonsoft.Json;
@@ -161,6 +162,45 @@ namespace OptionEdge.API.AliceBlue
         public virtual OrderHistoryResult[] GetOrderHistory(string orderNumber)
         {
             return ExecutePost<OrderHistoryResult[]>(_urls["order.history"], new OrderHistoryParams { OrderNumber = orderNumber });
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="retryDelay">milliseconds</param>
+        /// <returns></returns>
+        public virtual async Task<OrderHistoryResult> GetOrderHistory(string orderNumber, string orderStatus, int maxRetries = 5, int retryDelay = 500)
+        {
+            return await GetOrderHistory(orderNumber, (status) =>
+            {
+                return status == orderStatus;
+            }, maxRetries, retryDelay);         
+        }
+
+        public virtual async Task<OrderHistoryResult> GetOrderHistory(string orderNumber, Func<string, bool> hasOrderStatus, int maxRetries = 5, int retryDelay = 500)
+        {
+            int retry = 1;
+
+            OrderHistoryResult orderHistory = null;
+
+            while (retry <= maxRetries)
+            {
+                retry++;
+
+                var orderHistories = GetOrderHistory(orderNumber);
+                if (orderHistories != null && orderHistories.Length > 0)
+                {
+                    orderHistory = orderHistories.Where(x => hasOrderStatus(x.OrderStatus)).FirstOrDefault();
+                }
+
+                if (orderHistory == null)
+                {
+                    await Task.Delay(retryDelay);
+                    continue;
+                }
+            }
+
+            return orderHistory;
         }
 
         public virtual OrderBookResult[] GetOrderBook()

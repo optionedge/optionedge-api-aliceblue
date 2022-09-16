@@ -75,6 +75,10 @@ namespace OptionEdge.API.AliceBlue
         public const string EXCHANGE_BCO = "BCO";
         public const string EXCHANGE_INDICES = "INDICES";
 
+        public const string ORDER_HISTORY_COMPLETE = "complete";
+        public const string ORDER_HISTORY_REJECTED = "rejected";
+        public const string ORDER_HISTORY_PENDING = "pending";
+
         public const string ORDER_COMPLEXITY_REGULAR = "regular";
         public const string ORDER_COMPLEXITY_BRACKET_ORDER = "bo";
         public const string ORDER_COMPLEXITY_COVER_ORDER = "co";

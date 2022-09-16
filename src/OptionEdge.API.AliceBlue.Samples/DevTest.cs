@@ -131,24 +131,25 @@ namespace OptionEdge.API.AliceBlue.Samples
             _ticker.Subscribe(Constants.TICK_MODE_FULL,
                 new SubscriptionToken[]
                     {
-                       new SubscriptionToken
-                       {
-                           Exchange = Constants.EXCHANGE_NSE,
-                           Token = 26000
-                       },
-                       new SubscriptionToken
-                       {
-                           Exchange = Constants.EXCHANGE_NSE,
-                           Token = 26009
-                       },
+                       //new SubscriptionToken
+                       //{
+                       //    Exchange = Constants.EXCHANGE_NSE,
+                       //    Token = 26000
+                       //},
+                       //new SubscriptionToken
+                       //{
+                       //    Exchange = Constants.EXCHANGE_NSE,
+                       //    Token = 26009
+                       //},
                        new SubscriptionToken
                        {
                            Exchange = Constants.EXCHANGE_NFO,
-                           Token = 35042
+                           Token = 40246
                        },
+                       
                     });
 
-            _ticker.Subscribe(Constants.EXCHANGE_NSE, Constants.TICK_MODE_FULL, new int[] { 26000, 26009 });
+            //_ticker.Subscribe(Constants.EXCHANGE_NSE, Constants.TICK_MODE_FULL, new int[] { 26000, 26009 });
         }
     }
 }

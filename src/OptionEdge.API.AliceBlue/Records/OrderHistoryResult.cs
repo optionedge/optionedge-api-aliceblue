@@ -13,6 +13,9 @@ namespace OptionEdge.API.AliceBlue.Records
         [JsonPropertyName("Prc")]
         public decimal Price { get; set; }
 
+        [JsonPropertyName("averageprice")]
+        public decimal AveragePrice { get; set; }
+
         [JsonPropertyName("Qty")]
         public int Qty { get; set; }
 
