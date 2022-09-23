@@ -20,7 +20,7 @@ namespace OptionEdge.API.AliceBlue.Samples
         static AliceBlue _aliceBlue;
         static Ticker _ticker;
 
-        static string _cachedTokenFile = "cached_token.txt";
+        static string _cachedTokenFile = $"cached_token_{DateTime.Now.ToString("dd_mmm_yyyy")}.txt";
 
         public void Run()
         {
@@ -96,6 +96,32 @@ namespace OptionEdge.API.AliceBlue.Samples
         private void _ticker_OnReady()
         {
             Console.WriteLine("Socket connection authenticated. Ready to live stream feeds.");
+
+            // subscribe for feeds when connection is authenticated, else 
+            // no feeds data will be received from server.
+
+            _ticker.Subscribe(Constants.TICK_MODE_FULL,
+                new SubscriptionToken[]
+                    {
+                       //new SubscriptionToken
+                       //{
+                       //    Exchange = Constants.EXCHANGE_NSE,
+                       //    Token = 26000
+                       //},
+                       //new SubscriptionToken
+                       //{
+                       //    Exchange = Constants.EXCHANGE_NSE,
+                       //    Token = 26009
+                       //},
+                       new SubscriptionToken
+                       {
+                           Exchange = Constants.EXCHANGE_NFO,
+                           Token = 40246
+                       },
+
+                    });
+
+            //_ticker.Subscribe(Constants.EXCHANGE_NSE, Constants.TICK_MODE_FULL, new int[] { 26000, 26009 });
         }
 
         private static void _ticker_OnTick(Tick TickData)
@@ -125,31 +151,7 @@ namespace OptionEdge.API.AliceBlue.Samples
 
         private static void _ticker_OnConnect()
         {
-            Console.WriteLine("Ticker connected.");
-
-            Thread.Sleep(2000);
-            _ticker.Subscribe(Constants.TICK_MODE_FULL,
-                new SubscriptionToken[]
-                    {
-                       //new SubscriptionToken
-                       //{
-                       //    Exchange = Constants.EXCHANGE_NSE,
-                       //    Token = 26000
-                       //},
-                       //new SubscriptionToken
-                       //{
-                       //    Exchange = Constants.EXCHANGE_NSE,
-                       //    Token = 26009
-                       //},
-                       new SubscriptionToken
-                       {
-                           Exchange = Constants.EXCHANGE_NFO,
-                           Token = 40246
-                       },
-                       
-                    });
-
-            //_ticker.Subscribe(Constants.EXCHANGE_NSE, Constants.TICK_MODE_FULL, new int[] { 26000, 26009 });
+            Console.WriteLine("Ticker connected.");           
         }
     }
 }

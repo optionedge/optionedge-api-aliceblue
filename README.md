@@ -36,7 +36,7 @@ While creating the instance of Alice Blue Api Client set enable logging paramete
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 1.0.0.15-beta
+Install-Package OptionEdge.API.AliceBlue -Version 1.0.1
 ```
 
 ## Sample project
@@ -49,6 +49,14 @@ Please refer this [Youtube](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJP
 ```csharp
 using OptionEdge.API.AliceBlue;
 using OptionEdge.API.AliceBlue.Records;
+```
+
+## Declare variables
+```csharp
+AliceBlue _aliceBlue;
+Ticker _ticker;
+
+string _cachedTokenFile = $"cached_token_{DateTime.Now.ToString("dd_mmm_yyyy")}.txt";
 ```
 
 ## Initialize

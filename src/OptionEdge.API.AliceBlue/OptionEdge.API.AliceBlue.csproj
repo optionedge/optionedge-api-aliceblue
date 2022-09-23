@@ -10,10 +10,10 @@
     <PackageProjectUrl>https://github.com/proftheta/optionedge-api-aliceblue</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/proftheta/optionedge-api-aliceblue</RepositoryUrl>
-    <AssemblyVersion>1.0.0.15</AssemblyVersion>
+    <AssemblyVersion>1.0.1</AssemblyVersion>
     <Version>$(VersionPrefix)</Version>
-	  <VersionPrefix>1.0.0.15</VersionPrefix>
-	  <VersionSuffix>beta</VersionSuffix>
+	  <VersionPrefix>1.0.1</VersionPrefix>
+	  <VersionSuffix></VersionSuffix>
   </PropertyGroup>
 
   <ItemGroup>
