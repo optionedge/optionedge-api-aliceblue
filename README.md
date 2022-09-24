@@ -3,9 +3,6 @@ Client library to communicate with [AliceBlue v2 REST API](https://v2api.alicebl
 
 OptionEdge client library provides simpler interface to connect to AliceBlue REST Api and live streaming services.
 
-### **READ THIS CAREFULLY**
-
-Currently this library is in beta stage, please expect the methods, parameters to be changed based on the feedback.
 
 ## Refer to this Youtube video for API usage & integration guide  [ProfTheta - Your Guide to Options](https://www.youtube.com/watch?v=ncjVPPeSQ88)
 
