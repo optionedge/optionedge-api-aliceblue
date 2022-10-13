@@ -118,29 +118,61 @@ namespace OptionEdge.API.AliceBlue
 
                 if (tick.BuyPrice1 <= 0)
                     tick.BuyPrice1 = storedTick.BuyPrice1;
+                else
+                    storedTick.BuyPrice1 = tick.BuyPrice1;
+
                 if (tick.BuyPrice2 <= 0)
                     tick.BuyPrice2 = storedTick.BuyPrice2;
+                else
+                    storedTick.BuyPrice2 = tick.BuyPrice2;
+
                 if (tick.BuyPrice3 <= 0)
                     tick.BuyPrice3 = storedTick.BuyPrice3;
+                else
+                    storedTick.BuyPrice3 = tick.BuyPrice3;
+
                 if (tick.BuyPrice4 <= 0)
                     tick.BuyPrice4 = storedTick.BuyPrice4;
+                else
+                    storedTick.BuyPrice4 = tick.BuyPrice4;
+
                 if (tick.BuyPrice5 <= 0)
                     tick.BuyPrice5 = storedTick.BuyPrice5;
+                else
+                    storedTick.BuyPrice5 = tick.BuyPrice5;
+
 
                 if (tick.SellPrice1 <= 0)
                     tick.SellPrice1 = storedTick.SellPrice1;
+                else
+                    storedTick.SellPrice1 = tick.SellPrice1;
+
                 if (tick.SellPrice2 <= 0)
                     tick.SellPrice2 = storedTick.SellPrice2;
+                else
+                    storedTick.SellPrice2 = tick.SellPrice2;
+
                 if (tick.SellPrice3 <= 0)
                     tick.SellPrice3 = storedTick.SellPrice3;
+                else
+                    storedTick.SellPrice3 = tick.SellPrice3;
+                
                 if (tick.SellPrice4 <= 0)
                     tick.SellPrice4 = storedTick.SellPrice4;
+                else
+                    storedTick.SellPrice4 = tick.SellPrice4;
+                
                 if (tick.SellPrice5 <= 0)
                     tick.SellPrice5 = storedTick.SellPrice5;
+                else
+                    storedTick.SellPrice5 = tick.SellPrice5;
 
 
                 if (tick.BuyQty1 <= 0)
                     tick.BuyQty1 = storedTick.BuyQty1;
+                else
+                    storedTick.BuyQty1 = tick.BuyQty1;
+
                 if (tick.BuyQty2 <= 0)
                     tick.BuyQty2 = storedTick.BuyQty2;
                 if (tick.BuyQty3 <= 0)
@@ -152,6 +184,9 @@ namespace OptionEdge.API.AliceBlue
 
                 if (tick.SellQty1 <= 0)
                     tick.SellQty1 = storedTick.SellQty1;
+                else
+                    storedTick.SellQty1 = tick.SellQty1;
+
                 if (tick.SellQty2 <= 0)
                     tick.SellQty2 = storedTick.SellQty2;
                 if (tick.SellQty3 <= 0)
@@ -199,6 +234,8 @@ namespace OptionEdge.API.AliceBlue
 
         private void _onData(byte[] Data, int Count, string MessageType)
         {
+            if (_debug) Utils.LogMessage("On Data event");
+
             _timerTick = _interval;
 
             if (MessageType == "Text")
