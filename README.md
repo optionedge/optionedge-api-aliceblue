@@ -3,9 +3,18 @@ Client library to communicate with [AliceBlue v2 REST API](https://v2api.alicebl
 
 OptionEdge client library provides simpler interface to connect to AliceBlue REST Api and live streaming services.
 
-### **READ THIS CAREFULLY**
+# Disclaimer
+```
+This software is an unofficial client libray for AliceBlue Api V2 and 
+is not affiliated with / endorsed or approved by AliceBlue in any way.
 
-Currently this library is in beta stage, please expect the methods, parameters to be changed based on the feedback.
+This is purely an enthusiast program intended for educational purposes only and 
+is not financial advice.
+
+By downloading this software you acknowledge that you are using this 
+at your own risk and that I am is not responsible for any damages that 
+may occur to you due to the usage or installation of this program
+```
 
 ## Refer to this Youtube video for API usage & integration guide  [ProfTheta - Your Guide to Options](https://www.youtube.com/watch?v=ncjVPPeSQ88)
 
@@ -404,5 +413,8 @@ private static void _ticker_OnConnect()
 - [AliceBlue Ant Web](https://a3.aliceblueonline.com/)
 - [ProfTheta Twitter @ProfTheta21](https://twitter.com/ProfTheta21)
 - [ProfTheta Youtube Channel](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJPohEQ)
+
+# Credits
+- Websocket code reference is based on Zerodha Kite Connect .Net Client Library 
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
