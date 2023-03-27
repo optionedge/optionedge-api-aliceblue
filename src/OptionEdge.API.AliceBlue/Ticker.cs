@@ -105,6 +105,8 @@ namespace OptionEdge.API.AliceBlue
         {
             _subscribedTokens?.Clear();
             _ws?.Close();
+            _tickStore?.Clear();
+            _timer.Stop();
         }
        
         ConcurrentDictionary<string, ConcurrentDictionary<int, Tick>> _tickStore = new ConcurrentDictionary<string, ConcurrentDictionary<int, Tick>>();
@@ -331,13 +333,6 @@ namespace OptionEdge.API.AliceBlue
             {
                 _ws.Connect(_socketUrl);
             }
-        }
-
-        public void Close()
-        {
-            _tickStore?.Clear();
-            _timer.Stop();
-            _ws.Close();
         }
 
         private void Reconnect()
