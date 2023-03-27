@@ -18,7 +18,7 @@ namespace OptionEdge.API.AliceBlue
 {
     public class AliceBlue
     {
-        string _baseUrl = "https://a3.aliceblueonline.com/rest/AliceBlueAPIService/api";
+        string _baseUrl = "https://ant.aliceblueonline.com/rest/AliceBlueAPIService/api/";
         string _websocketUrl = "wss://ws1.aliceblueonline.com/NorenWS";
 
         string _apiKey;

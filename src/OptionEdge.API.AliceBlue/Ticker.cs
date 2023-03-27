@@ -100,6 +100,12 @@ namespace OptionEdge.API.AliceBlue
             _timer.Stop();
             OnClose?.Invoke();
         }
+
+        public void Close()
+        {
+            _subscribedTokens?.Clear();
+            _ws?.Close();
+        }
        
         ConcurrentDictionary<string, ConcurrentDictionary<int, Tick>> _tickStore = new ConcurrentDictionary<string, ConcurrentDictionary<int, Tick>>();
 
