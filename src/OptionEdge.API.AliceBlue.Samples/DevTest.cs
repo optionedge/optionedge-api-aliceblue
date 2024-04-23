@@ -54,6 +54,9 @@ namespace OptionEdge.API.AliceBlue.Samples
                     });
 
 
+                var ob = _aliceBlue.GetOrderBook();
+
+
                 // ==========================
                 // Live Feeds Data Streaming
                 // ==========================
