@@ -54,7 +54,7 @@ namespace OptionEdge.API.AliceBlue.Samples
                     });
 
 
-                var ob = _aliceBlue.GetOrderBook();
+                var ob = _aliceBlue.GetOrderHistory("24042300271743");
 
 
                 // ==========================
