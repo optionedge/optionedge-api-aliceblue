@@ -11,10 +11,10 @@ namespace OptionEdge.API.AliceBlue.Records
         public string TradingSymbol { get; set; }
 
         [JsonPropertyName("Prc")]
-        public decimal Price { get; set; }
+        public string Price { get; set; }
 
         [JsonPropertyName("averageprice")]
-        public decimal AveragePrice { get; set; }
+        public string AveragePrice { get; set; }
 
         [JsonPropertyName("Qty")]
         public int Qty { get; set; }
@@ -29,16 +29,16 @@ namespace OptionEdge.API.AliceBlue.Records
         public string OrderType { get; set; }
 
         [JsonPropertyName("PriceNumerator")]
-        public decimal PriceNumerator { get; set; }
+        public string PriceNumerator { get; set; }
 
         [JsonPropertyName("GeneralNumerator")]
-        public decimal GeneralNumerator { get; set; }
+        public string GeneralNumerator { get; set; }
 
         [JsonPropertyName("PriceDenomenator")]
-        public decimal PriceDenomenator { get; set; }
+        public string PriceDenomenator { get; set; }
 
         [JsonPropertyName("GeneralDenomenator")]
-        public decimal GeneralDenomenator { get; set; }
+        public string GeneralDenomenator { get; set; }
 
         [JsonPropertyName("bqty")]
         public int LotSize { get; set; }
@@ -98,6 +98,6 @@ namespace OptionEdge.API.AliceBlue.Records
         public string LegOrderIndicator { get; set; }
 
         [JsonPropertyName("filledShares")]
-        public int FilledQty { get; set; }
+        public string FilledQty { get; set; }
     }
 }

@@ -81,7 +81,7 @@ namespace OptionEdge.API.AliceBlue.Records
         public string TransactionType { get; set; }
         [JsonPropertyName("bqty")]
         public int LotSize { get; set; }
-        [JsonPropertyName("Fillshares")]
+        [JsonPropertyName("Filledshares")]
         public string FilledQty { get; set; }
         [JsonPropertyName("AlgoCategory")]
         public string AlgoCategory { get; set; }
