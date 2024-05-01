@@ -554,7 +554,7 @@ namespace OptionEdge.API.AliceBlue
                     {
                         try
                         {
-                            contracts.Add(new Contract
+                            var contract = new Contract
                             {
                                 Exchange = csv["Exch"],
                                 ExchangeSegment = csv.HasHeader("Exchange Segment") ? csv["Exchange Segment"] : null,
@@ -569,7 +569,14 @@ namespace OptionEdge.API.AliceBlue
                                 Expiry = csv.HasHeader("Expiry Date") && !string.IsNullOrEmpty(csv["Expiry Date"]) ? DateTime.Parse(csv["Expiry Date"]) : default(DateTime?),
                                 LotSize = csv.HasHeader("Lot Size") && !string.IsNullOrEmpty(csv["Lot Size"]) ? int.Parse(csv["Lot Size"]) : 0,
                                 TickSize = csv.HasHeader("Tick Size") && !string.IsNullOrEmpty(csv["Tick Size"]) ? decimal.Parse(csv["Tick Size"]) : 0,
-                            });
+                            };
+
+                            if (string.IsNullOrEmpty(contract.TradingSymbol))
+                            {
+                                contract.TradingSymbol = contract.InstrumentSymbol;
+                            }
+
+                            contracts.Add(contract);
                         }
                         catch (Exception ex)
                         {
