@@ -137,17 +137,15 @@ namespace OptionEdge.API.AliceBlue
 
         private void _onData(byte[] Data, int Count, string MessageType)
         {
+
             if (_debug) Utils.LogMessage("On Data event");
 
             _timerTick = _interval;
 
             if (MessageType == "Text")
             {
-                string message = Encoding.UTF8.GetString(Data.Take(Count).ToArray());
-                if (_debug) Utils.LogMessage("WebSocket Message: " + message);
-
-                var data = JsonSerializer.Deserialize<dynamic>(Data);
-                if (data["t"] == "ck")
+                var tick = JsonSerializer.Deserialize<Tick>(Data.Take(Count).ToArray(), 0);
+                if (tick.ResponseType == "ck")
                 {
                     _isReady = true;
 
@@ -159,19 +157,18 @@ namespace OptionEdge.API.AliceBlue
                     if (_debug)
                         Utils.LogMessage("Connection acknowledgement received. Websocket connected.");
                 }
-                else if (data["t"] == "tk" || data["t"] == "dk")
+                else if (tick.ResponseType == "tk" || tick.ResponseType == "dk")
                 {
-                    Tick tick = new Tick(data);                 
                     OnTick(tick);
-                } else if (data["t"] == "tf" || data["t"] == "df")
+                }
+                else if (tick.ResponseType == "tf" || tick.ResponseType == "df")
                 {
-                    Tick tick = new Tick(data);
                     OnTick(tick);
                 }
                 else
                 {
                     if (_debug)
-                        Utils.LogMessage($"Unknown feed type: {data["t"]}");
+                        Utils.LogMessage($"Unknown feed type: {tick.ResponseType}");
                 }
             }
             else if (MessageType == "Close")
