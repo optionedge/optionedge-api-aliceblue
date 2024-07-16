@@ -53,6 +53,9 @@ namespace OptionEdge.API.AliceBlue
 
         Func<int, bool> _shouldUnSubscribe = null;
 
+        private System.Timers.Timer _timerHeartbeat;
+        private int _timerHeartbeatInterval = 40000;
+
         public Ticker(string userId, string accessToken, string socketUrl = null, bool reconnect = false, int reconnectInterval = 5, int reconnectTries = 50, bool debug = false)
         {
             _debug = debug;
@@ -79,11 +82,35 @@ namespace OptionEdge.API.AliceBlue
             _timer = new System.Timers.Timer();
             _timer.Elapsed += _onTimerTick;
             _timer.Interval = 1000;
+
+            _timerHeartbeat = new System.Timers.Timer();
+            _timerHeartbeat.Elapsed += _timerHeartbeat_Elapsed;
+            _timerHeartbeat.Interval = _timerHeartbeatInterval;
         }
 
         internal void SetShouldUnSubscribeHandler(Func<int,bool> shouldUnSubscribe )
         {
             _shouldUnSubscribe = shouldUnSubscribe; 
+        }
+
+        private void _timerHeartbeat_Elapsed(object sender, System.Timers.ElapsedEventArgs e)
+        {
+            if (IsConnected)
+                SendHeartBeat();
+        }
+
+        private void SendHeartBeat()
+        {
+            try
+            {
+                if (!_ws.IsConnected()) return;
+                string msg = @"{\""k\"": \""\"",\""t\"": \""h\""}";
+                _ws.Send(msg);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"AliceBlue Market Ticker:Send Heartbeat error:{ex.ToString()}");
+            }
         }
 
         private void _onError(string Message)
@@ -96,6 +123,7 @@ namespace OptionEdge.API.AliceBlue
         private void _onClose()
         {
             _timer.Stop();
+            _timerHeartbeat.Stop();
             OnClose?.Invoke();
         }
 
@@ -104,6 +132,7 @@ namespace OptionEdge.API.AliceBlue
             _subscribedTokens?.Clear();
             _ws?.Close();
             _timer.Stop();
+            _timerHeartbeat.Stop();
         }       
 
         private void _onData(byte[] Data, int Count, string MessageType)
@@ -175,6 +204,7 @@ namespace OptionEdge.API.AliceBlue
             _retryCount = 0;
             _timerTick = _interval;
             _timer.Start();
+            _timerHeartbeat.Start();
 
             OnConnect?.Invoke();
         }
