@@ -45,7 +45,7 @@ While creating the instance of Alice Blue Api Client set enable logging paramete
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 1.0.6
+Install-Package OptionEdge.API.AliceBlue -Version 1.0.7
 ```
 
 ## Sample project

@@ -80,23 +80,23 @@ namespace OptionEdge.API.AliceBlue
 
             var options = new RestClientOptions(_baseUrl);
 
-            _restClient = new RestClient(options)
-            {
-                Authenticator = new AliceBlueAuthenticator(_userId, 
-                _apiKey, 
-                _baseUrl, 
-                _urls["auth.encryption.key"], 
-                _urls["auth.session.id"], 
+            options.Authenticator = new AliceBlueAuthenticator(_userId,
+                _apiKey,
+                _baseUrl,
+                _urls["auth.encryption.key"],
+                _urls["auth.session.id"],
                 enableLogging, (accessToken) =>
-                {                    
+                {
                     onAccessTokenGenerated?.Invoke(accessToken);
-                }, 
+                },
                 cachedAccessTokenProvider,
                 (accessToken) =>
                 {
                     _accessToken = accessToken;
-                })
-            };
+                });
+
+            _restClient = new RestClient(options);
+           
         }
 
         private Ticker _ticker;
