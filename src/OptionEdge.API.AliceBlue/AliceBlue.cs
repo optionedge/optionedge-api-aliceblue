@@ -198,6 +198,8 @@ namespace OptionEdge.API.AliceBlue
                     await Task.Delay(retryDelay);
                     continue;
                 }
+                else
+                    break;
             }
 
             return orderHistory;
@@ -607,11 +609,22 @@ namespace OptionEdge.API.AliceBlue
 
             var response = _restClient.ExecuteAsync<T>(request, method).Result;
 
-            if (response != null && !string.IsNullOrEmpty(response.ErrorMessage) && _enableLogging)
-                Utils.LogMessage($"Error executing api request. Status: {response.StatusCode}-{response.ErrorMessage}");
+            BaseResponseResult responseStatus = null;
+            if (!string.IsNullOrEmpty( response.Content ))
+            {
+                if (response.Content == "Unauthorized")
+                    return default(T);
+
+                if (response.Content.Contains(Constants.API_RESPONSE_STATUS_Not_OK) && _enableLogging)
+                {
+                    Utils.LogMessage($"Error executing api request. Status: {response.StatusCode}-{response.ErrorMessage}");
+                    return default(T);  
+                }
+            }
 
 
-            if (response.StatusCode == System.Net.HttpStatusCode.OK)
+
+            if (!string.IsNullOrEmpty(response.Content) && response.Content.Contains(Constants.API_RESPONSE_STATUS_OK))
                 return response.Data;
             else
             {
