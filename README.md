@@ -27,7 +27,7 @@ may occur to you due to the usage or installation of this program
 
 ## Requirements
 
-This library targets `netstandard2.1` and can be used with `.Net Core 2.0 and above` & `.Net Framework 4.6 and above`.
+This library targets `netstandard2.0` and can be used with `.Net Core 2.0 and above` & `.Net Framework 4.6 and above`.
 
 ## Getting Started
 
