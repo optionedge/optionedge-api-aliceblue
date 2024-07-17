@@ -16,7 +16,7 @@ at your own risk and that I am is not responsible for any damages that
 may occur to you due to the usage or installation of this program
 ```
 
-## Refer to this Youtube video for API usage & integration guide  [ProfTheta - Your Guide to Options](https://www.youtube.com/watch?v=ncjVPPeSQ88)
+## Refer to this Youtube video for API usage & integration guide  [Optionedge - Your Guide to Options](https://www.youtube.com/watch?v=ncjVPPeSQ88)
 
 [![Watch the video](https://img.youtube.com/vi/ncjVPPeSQ88/mqdefault.jpg)](https://www.youtube.com/watch?v=ncjVPPeSQ88)
 
@@ -411,8 +411,8 @@ private static void _ticker_OnConnect()
 - [AliceBlue V2 API Documentation](https://v2api.aliceblueonline.com/introduction)
 - [AliceBlue V2 API Postman Collection](https://v2api.aliceblueonline.com/Aliceblue.postman_collection.json)
 - [AliceBlue Ant Web](https://a3.aliceblueonline.com/)
-- [ProfTheta Twitter @ProfTheta21](https://twitter.com/ProfTheta21)
-- [ProfTheta Youtube Channel](https://www.youtube.com/channel/UChp2hjl-OgGpHKCrwJPohEQ)
+- [OptionEdge X (Twitter) @OptionEdgeIn](https://x.com/optionedgein)
+- [OptionEdge Youtube Channel](https://www.youtube.com/@optionedge)
 
 # Credits
 - Websocket code reference is based on Zerodha Kite Connect .Net Client Library 
