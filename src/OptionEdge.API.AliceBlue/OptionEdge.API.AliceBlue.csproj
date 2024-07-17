@@ -14,6 +14,7 @@
     <Version>$(VersionPrefix)</Version>
 	  <VersionPrefix>2.0.0</VersionPrefix>
 	  <VersionSuffix></VersionSuffix>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <ItemGroup>
@@ -21,6 +22,7 @@
       <Pack>True</Pack>
       <PackagePath>\</PackagePath>
     </None>
+    <None Include="licenses\LICENSE.txt" Pack="true" PackagePath=""/>
   </ItemGroup>
 
   <ItemGroup>
@@ -30,5 +32,9 @@
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
     <PackageReference Include="RestSharp" Version="111.4.0" />
     <PackageReference Include="RestSharp.Serializers.NewtonsoftJson" Version="111.4.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Licenses\" />
   </ItemGroup>
 </Project>
