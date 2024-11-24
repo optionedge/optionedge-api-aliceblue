@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 
 namespace OptionEdge.API.AliceBlue.Records
 {
-    internal class EncryptionKeyResult : BaseResponseResult
+    public class EncryptionKeyResult : BaseResponseResult
     {
         [JsonPropertyName("userId")]
         public string UserID { get; set; }

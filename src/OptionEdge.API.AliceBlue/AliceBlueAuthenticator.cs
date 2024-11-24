@@ -97,7 +97,7 @@ namespace OptionEdge.API.AliceBlue
             if (_enableLogging)
                 Utils.LogMessage($"Calling create session endpoint: {_sessionIdEndpoint}");
 
-            var createSessonResponse = await restClient.PostAsync<CreateSessonDetailResult>(request);
+            var createSessonResponse = await restClient.PostAsync<GetAccessTokenResult>(request);
             if (createSessonResponse.Status == Constants.API_RESPONSE_STATUS_Not_OK)
                 if (_enableLogging)
                     Utils.LogMessage($"Error creating sesson. Status: {createSessonResponse.Status}, Error Message: {createSessonResponse.ErrorMessage}");
@@ -106,7 +106,7 @@ namespace OptionEdge.API.AliceBlue
 
             if (restClient != null) restClient.Dispose();
 
-            return createSessonResponse?.SessionID;
+            return createSessonResponse?.AccessToken;
         }
     }
 }

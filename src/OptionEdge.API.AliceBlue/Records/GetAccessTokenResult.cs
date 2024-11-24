@@ -5,11 +5,11 @@ using System.Text.Json.Serialization;
 
 namespace OptionEdge.API.AliceBlue.Records
 {
-    internal class CreateSessonDetailResult : BaseResponseResult
+    public class GetAccessTokenResult : BaseResponseResult
     {
         [JsonPropertyName("userId")]
         public string UserID { get; set; }
         [JsonPropertyName("sessionID")]
-        public string SessionID { get; set; }
+        public string AccessToken { get; set; }
     }
 }

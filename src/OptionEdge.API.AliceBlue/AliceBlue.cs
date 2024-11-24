@@ -65,6 +65,11 @@ namespace OptionEdge.API.AliceBlue
             ["ws.session.invalidate"] = "/ws/invalidateSocketSess"
         };
 
+        public AliceBlue()
+        {
+
+        }
+
         public AliceBlue(string userId, string apiKey, string baseUrl = null, string websocketUrl = null, bool enableLogging = false, Action<string> onAccessTokenGenerated = null, Func<string> cachedAccessTokenProvider = null)
         {
             if (string.IsNullOrEmpty(userId)) throw new ArgumentNullException("User id required.");
@@ -97,6 +102,70 @@ namespace OptionEdge.API.AliceBlue
 
             _restClient = new RestClient(options);
            
+        }
+
+        public void SetAccessToken(string accessToken)
+        {
+            _accessToken = accessToken;
+        }
+
+        public async Task<EncryptionKeyResult> GetEncryptionKey()
+        {
+            if (_enableLogging)
+                Utils.LogMessage("Getting the Encryption Key...");
+
+            var options = new RestClientOptions(_baseUrl);
+            var restClient = new RestClient(options);
+
+            var request = new RestRequest(_urls["auth.encryption.key"]);
+
+            var encryptionKeyParams = new EncryptionKeyParams
+            {
+                UserId = _userId,
+            };
+
+            request.AddStringBody(JsonConvert.SerializeObject(encryptionKeyParams), ContentType.Json);
+
+            if (_enableLogging)
+                Utils.LogMessage($"Calling encryption key endpoint: {_urls["auth.encryption.key"]}");
+
+            var encryptionKeyResponse = await restClient.PostAsync<EncryptionKeyResult>(request);
+
+            if (_enableLogging)
+                Utils.LogMessage($"Encryption Key Result. Status: {encryptionKeyResponse.Status}-{encryptionKeyResponse.ErrorMessage}");
+
+            return encryptionKeyResponse;
+        }
+
+        public async Task<GetAccessTokenResult> GetAccessToken(string encryptionKey)
+        {
+            if (_enableLogging)
+                Utils.LogMessage("Getting the Access Token (Session Id).");
+
+            
+            var userData = Utils.GetSHA256($"{_userId}{_apiKey}{encryptionKey}");
+
+            var options = new RestClientOptions(_baseUrl);
+            var restClient = new RestClient(options);
+
+            var request = new RestRequest(_urls["auth.session.id"]);
+
+            var createSessionIdParams = new WebsocketSessionIdParams
+            {
+                UserId = _userId,
+                UserData = userData
+            };
+            request.AddStringBody(JsonConvert.SerializeObject(createSessionIdParams), ContentType.Json);
+
+            if (_enableLogging)
+                Utils.LogMessage($"Calling create session endpoint: {_urls["auth.session.id"]}");
+
+            var accessTokenResult = await restClient.PostAsync<GetAccessTokenResult>(request);
+            
+
+            if (restClient != null) restClient.Dispose();
+
+            return accessTokenResult;
         }
 
         private Ticker _ticker;
@@ -610,19 +679,20 @@ namespace OptionEdge.API.AliceBlue
             var response = _restClient.ExecuteAsync<T>(request, method).Result;
 
             BaseResponseResult responseStatus = null;
-            if (!string.IsNullOrEmpty( response.Content ))
+            if (!string.IsNullOrEmpty(response.Content))
             {
                 if (response.Content == "Unauthorized")
-                    return default(T);
+                {
+                    throw new UnauthorizedAccessException(response.ErrorException?.ToString());
+                }
 
                 if (response.Content.Contains(Constants.API_RESPONSE_STATUS_Not_OK) && _enableLogging)
                 {
-                    Utils.LogMessage($"Error executing api request. Status: {response.StatusCode}-{response.ErrorMessage}");
-                    return default(T);  
+                    var errorMessage = $"Error executing api request. Status: {response.StatusCode}-{response.ErrorMessage}";
+                    Utils.LogMessage(errorMessage);
+                    throw new UnauthorizedAccessException(errorMessage);
                 }
             }
-
-
 
             if (!string.IsNullOrEmpty(response.Content) && response.Content.Contains(Constants.API_RESPONSE_STATUS_OK))
                 return response.Data;
@@ -637,6 +707,9 @@ namespace OptionEdge.API.AliceBlue
 
                 if (_enableLogging)
                     Utils.LogMessage(errorMessage);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                    throw new UnauthorizedAccessException(errorMessage);
 
                 return default(T);
             }
