@@ -138,8 +138,6 @@ namespace OptionEdge.API.AliceBlue
         private void _onData(byte[] Data, int Count, string MessageType)
         {
 
-            if (_debug) Utils.LogMessage("On Data event");
-
             _timerTick = _interval;
 
             if (MessageType == "Text")
