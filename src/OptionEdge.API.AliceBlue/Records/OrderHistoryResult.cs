@@ -59,7 +59,7 @@ namespace OptionEdge.API.AliceBlue.Records
         public decimal TriggerPrice { get; set;}
 
         [JsonPropertyName("disclosedqty")]
-        public int DisclosedQty { get; set; }
+        public string DisclosedQty { get; set; }
 
         [JsonPropertyName("exchangeorderid")]
         public string ExchangeOrdeId { get; set; }
