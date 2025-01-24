@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using LumenWorks.Framework.IO.Csv;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OptionEdge.API.AliceBlue.Records;
 using RestSharp;
 using RestSharp.Serializers;
@@ -55,8 +56,9 @@ namespace OptionEdge.API.AliceBlue
             ["contract.master.csv"] = "https://v2api.aliceblueonline.com/restpy/static/contract_master/{EXCHANGE}.csv",
 
             ["square.off.position"] = "/positionAndHoldings/sqrOofPosition",
-
-            ["history"] = "/chart/history",
+            
+            ["history"] = "https://a3-chart.aliceblueonline.com/omk/rest/ChartAPIService/chart/history",
+            //["history"] = "/chart/history",
 
             ["scrip.quote"] = "/ScripDetails/getScripQuoteDetails",
             ["scrip.open.interest"] = "/marketWatch/scripsMW",
@@ -286,18 +288,25 @@ namespace OptionEdge.API.AliceBlue
 
         public virtual HistoryDataResult GetHistoricalData(HistoryDataParams historyDataParams)
         {
-            var historicalDataBaseUrl = "https://a3.aliceblueonline.com/rest/AliceBlueAPIService/chart/history";
+            //return ExecuteGet<HistoryDataResult>(_urls["history"], historyDataParams);
+
+            var historicalDataBaseUrl = "https://a3-chart.aliceblueonline.com/omk/rest/ChartAPIService/chart/history";
 
             HistoryDataResult result = null;
 
             using (var restClient = new RestClient(historicalDataBaseUrl))
             {
+                var bearer = $"Bearer {_userId} {_accessToken}";
+                var headers = new HeaderParameter(KnownHeaders.Authorization, bearer);
+                restClient.DefaultParameters.AddParameter(headers);
+
                 var request = new RestRequest();
                 request.Method = Method.Get;
-                request.AddQueryParameter("symbol", historyDataParams.InstrumentToken);
-                request.AddQueryParameter("from", historyDataParams.From);
-                request.AddQueryParameter("to", historyDataParams.To);
-                request.AddQueryParameter("resolution", historyDataParams.Interval);
+                request.AddQueryParameter("exchange", "NSE::index");
+                request.AddQueryParameter("symbol", "26017");
+                request.AddQueryParameter("from", 1737633424);
+                request.AddQueryParameter("to", 1737702544);
+                request.AddQueryParameter("resolution", 1);
                 request.AddQueryParameter("user", _userId);
 
                 if (historyDataParams.Index)
@@ -315,22 +324,22 @@ namespace OptionEdge.API.AliceBlue
                 {
                     result = response.Data;
 
-                    for (int i=0; i< response.Data.Close.Length; i++)
+                    for (int i = 0; i < response.Data.Close.Length; i++)
                     {
                         result.Candles.Add(new HistoryCandle
                         {
                             Open = response.Data.Open[i],
                             Close = response.Data.Close[i],
-                            High = response.Data.High[i],   
+                            High = response.Data.High[i],
                             Low = response.Data.Low[i],
                             Volume = response.Data.Volume[i],
-                            IV  = response.Data.IV,
+                            IV = response.Data.IV,
                             TimeData = response.Data.Time[i]
                         });
                     }
                 }
             }
-            
+
             return result;
         }
 
