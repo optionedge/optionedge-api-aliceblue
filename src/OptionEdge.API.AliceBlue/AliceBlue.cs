@@ -302,21 +302,12 @@ namespace OptionEdge.API.AliceBlue
 
                 var request = new RestRequest();
                 request.Method = Method.Get;
-                request.AddQueryParameter("exchange", "NSE::index");
-                request.AddQueryParameter("symbol", "26017");
-                request.AddQueryParameter("from", 1737633424);
-                request.AddQueryParameter("to", 1737702544);
-                request.AddQueryParameter("resolution", 1);
+                request.AddQueryParameter("exchange", historyDataParams.Exchange);
+                request.AddQueryParameter("symbol", historyDataParams.InstrumentToken);
+                request.AddQueryParameter("from", historyDataParams.From);
+                request.AddQueryParameter("to", historyDataParams.To);
+                request.AddQueryParameter("resolution", historyDataParams.Interval);
                 request.AddQueryParameter("user", _userId);
-
-                if (historyDataParams.Index)
-                {
-                    request.AddQueryParameter("exchange", $"{historyDataParams.Exchange}::index");
-                }
-                else
-                {
-                    request.AddQueryParameter("exchange", historyDataParams.Exchange);
-                }
 
                 var response = restClient.ExecuteGet<HistoryDataResult>(request);
 
@@ -352,7 +343,6 @@ namespace OptionEdge.API.AliceBlue
                 From = ((DateTimeOffset)from).ToUnixTimeSeconds(),
                 To = ((DateTimeOffset)to).ToUnixTimeSeconds(),
                 Interval = interval,
-                Index = index
             };
 
             return GetHistoricalData(historyDataParams);

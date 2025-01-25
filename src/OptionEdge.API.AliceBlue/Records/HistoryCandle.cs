@@ -26,7 +26,7 @@ namespace OptionEdge.API.AliceBlue.Records
         {
             get
             {
-                return DateTimeOffset.FromUnixTimeSeconds(TimeData).ToLocalTime().DateTime;
+                return DateTimeOffset.FromUnixTimeMilliseconds(TimeData).ToLocalTime().DateTime;
             }
         }
     }

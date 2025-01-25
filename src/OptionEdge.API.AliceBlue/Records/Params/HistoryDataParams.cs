@@ -30,8 +30,6 @@ namespace OptionEdge.API.AliceBlue
         [JsonPropertyName("to")]
         public long To;
 
-        public bool Index { get; set; }
-
         [JsonPropertyName("user")]
         public string User { get; set; }
 
