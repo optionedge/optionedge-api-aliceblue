@@ -56,22 +56,22 @@ namespace OptionEdge.API.AliceBlue.Samples
 
                 // var ob = _aliceBlue.GetOrderHistory("24042300271743");
 
-                //var basketItems = new List<BasketMarginItem>
-                //    {
-                //        new BasketMarginItem
-                //        {
-                //            Exchange = "NSE",
-                //            TradingSymbol = "INFY-EQ",
-                //            Price = 1475.20m,
-                //            Quantity = 122,
-                //            Product = "MIS",
-                //            PriceType = "L",
-                //            Token = 1594,
-                //            TransactionType = "BUY"
-                //        }
-                //    };
+                var basketItems = new List<BasketMarginItem>
+                    {
+                        new BasketMarginItem
+                        {
+                            Exchange = "NSE",
+                            TradingSymbol = "INFY-EQ",
+                            Price = 1475.20m,
+                            Quantity = 122,
+                            Product = "MIS",
+                            PriceType = "L",
+                            Token = 1594,
+                            TransactionType = "BUY"
+                        }
+                    };
 
-                //var marginResult = _aliceBlue.GetBasketMargin(basketItems);
+                var marginResult = _aliceBlue.GetBasketMargin(basketItems);
 
 
                 // ==========================
@@ -100,7 +100,7 @@ namespace OptionEdge.API.AliceBlue.Samples
 
                 // var openInterest = _aliceBlue.GetOpenInterest(Constants.EXCHANGE_NFO, new int[] { 36303});
 
-                var contracts = _aliceBlue.GetMasterContracts(Constants.EXCHANGE_NFO).Result;
+                //var contracts = _aliceBlue.GetMasterContracts(Constants.EXCHANGE_NFO).Result;
 
                 // var history = _aliceBlue.GetHistoricalData(Constants.EXCHANGE_NFO, 37516, DateTime.Now.AddDays(-3), DateTime.Now, "5", false);
 
