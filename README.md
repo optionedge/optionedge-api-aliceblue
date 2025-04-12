@@ -49,7 +49,7 @@ This version has breaking changes from previous version
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 2.0.2
+Install-Package OptionEdge.API.AliceBlue -Version 2.0.4
 ```
 
 ## Sample project
@@ -216,6 +216,28 @@ var historicalCandles = _aliceBlue.GetHistoricalData(
     DateTime.Parse("6-Sep-2022 9:30 AM"),
     DateTime.Parse("8-Sep-2022 3:30 PM"),
     Constants.HISTORICAL_DATA_RESOLUTION_1_MINUTE);
+```
+
+## Basket Margin
+
+```csharp
+var basketItems = new List<BasketMarginItem>
+{
+    new BasketMarginItem
+    {
+        Exchange = "NSE",
+        TradingSymbol = "INFY-EQ",
+        Price = 1475.20m,
+        Quantity = 122,
+        Product = "MIS",
+        PriceType = "L",
+        Token = 1594,
+        TransactionType = "BUY"
+    }
+};
+
+var marginResult = _aliceBlue.GetBasketMargin(basketItems);
+
 ```
 
 ## Holdings

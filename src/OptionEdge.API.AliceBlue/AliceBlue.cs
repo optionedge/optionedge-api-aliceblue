@@ -1,19 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
-using System.Text.Json;
-using System.Threading;
 using System.Threading.Tasks;
 using LumenWorks.Framework.IO.Csv;
 using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using OptionEdge.API.AliceBlue.Records;
 using RestSharp;
-using RestSharp.Serializers;
-using RestSharp.Serializers.Json;
 
 namespace OptionEdge.API.AliceBlue
 {
@@ -64,7 +58,9 @@ namespace OptionEdge.API.AliceBlue
             ["scrip.open.interest"] = "/marketWatch/scripsMW",
 
             ["ws.session.create"] = "/ws/createSocketSess",
-            ["ws.session.invalidate"] = "/ws/invalidateSocketSess"
+            ["ws.session.invalidate"] = "/ws/invalidateSocketSess",
+
+            ["basket.margin"] = "/basket/getMargin",
         };
 
         public AliceBlue()
@@ -103,7 +99,9 @@ namespace OptionEdge.API.AliceBlue
                 });
 
             _restClient = new RestClient(options);
-           
+            
+            //_restClient.UseNewtonsoftJson();
+
         }
 
         public void SetAccessToken(string accessToken)
@@ -609,6 +607,14 @@ namespace OptionEdge.API.AliceBlue
             }
 
             return true;
+        }
+
+        public virtual BasketMarginResult GetBasketMargin(List<BasketMarginItem> basketItems)
+        {
+            if (basketItems == null || basketItems.Count == 0)
+                throw new ArgumentException("Basket items list cannot be empty.");
+
+            return ExecutePost<BasketMarginResult>(_urls["basket.margin"], basketItems);
         }
 
         public virtual async Task<IList<Contract>> GetMasterContracts(string exchange)

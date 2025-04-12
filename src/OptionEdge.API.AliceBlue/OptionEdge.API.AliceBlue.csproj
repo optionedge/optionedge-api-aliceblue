@@ -10,9 +10,9 @@
     <PackageProjectUrl>https://github.com/proftheta/optionedge-api-aliceblue</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/proftheta/optionedge-api-aliceblue</RepositoryUrl>
-    <AssemblyVersion>2.0.2</AssemblyVersion>
+    <AssemblyVersion>2.0.4</AssemblyVersion>
     <Version>$(VersionPrefix)</Version>
-	  <VersionPrefix>2.0.2</VersionPrefix>
+	  <VersionPrefix>2.0.4</VersionPrefix>
 	  <VersionSuffix></VersionSuffix>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
@@ -30,8 +30,7 @@
     <PackageReference Include="LumenWorksCsvReader" Version="4.0.0" />
     <PackageReference Include="Microsoft.CSharp" Version="4.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="RestSharp" Version="111.4.0" />
-    <PackageReference Include="RestSharp.Serializers.NewtonsoftJson" Version="111.4.0" />
+    <PackageReference Include="RestSharp" Version="112.1.0" />
   </ItemGroup>
 
   <ItemGroup>
