@@ -96,6 +96,17 @@ namespace OptionEdge.API.AliceBlue
         public const string SOCKET_RESPONSE_TYPE_TICK = "tf";
         public const string SOCKET_RESPONSE_TYPE_TICK_DEPTH_ACKNOWLEDGEMENT = "dk";
         public const string SOCKET_RESPONSE_TYPE_TICK_DEPTH = "df";
+        public const string SOCKET_RESPONSE_TYPE_CONNECTION_ACKNOWLEDGEMENT = "ck";
+        
+        // WebSocket message types
+        public const string WEBSOCKET_MESSAGE_TYPE_TEXT = "Text";
+        public const string WEBSOCKET_MESSAGE_TYPE_CLOSE = "Close";
+        
+        // Heartbeat message format
+        public const string HEARTBEAT_MESSAGE = @"{\""k\"": \""\"",\""t\"": \""h\""}";
+        
+        // WebSocket URLs
+        public const string DEFAULT_WEBSOCKET_URL = "wss://ws1.aliceblueonline.com/NorenWS";
 
         internal static Dictionary<string, string> ExchangeToSegmentMap = new Dictionary<string, string>()
         {
