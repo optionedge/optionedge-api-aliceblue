@@ -115,10 +115,7 @@ namespace OptionEdge.API.AliceBlue
         private readonly int _maxRateLimitErrors = 3;
         private DateTime _rateLimitBackoffUntil = DateTime.MinValue;
         
-        // Half-open connection detection
-        private DateTime _lastSuccessfulOperation = DateTime.MinValue;
-        private readonly TimeSpan _halfOpenDetectionThreshold = TimeSpan.FromSeconds(30);
-        
+       
         // System load monitoring
         private DateTime _lastTimerExpectedTime = DateTime.MinValue;
         private readonly TimeSpan _maxTimerDelay = TimeSpan.FromSeconds(5);
@@ -173,6 +170,8 @@ namespace OptionEdge.API.AliceBlue
         private System.Timers.Timer _timerHeartbeat;
         private int _timerHeartbeatInterval = 40000;
 
+        private bool _isMarketOpen = false;
+
         /// <summary>
         /// Initializes a new instance of the Ticker class for connecting to AliceBlue's market data feed.
         /// </summary>
@@ -199,7 +198,7 @@ namespace OptionEdge.API.AliceBlue
         /// <param name="reconnectTries">The maximum number of reconnection attempts.</param>
         /// <param name="debug">Whether to enable debug logging.</param>
         /// <param name="logger">Optional custom logger. If null, a default logger will be used.</param>
-        public Ticker(string userId, string accessToken, string socketUrl = null, bool reconnect = false, int reconnectInterval = 5, int reconnectTries = 50, bool debug = false, ITickerLogger logger = null)
+        public Ticker(string userId, string accessToken, string socketUrl = null, bool reconnect = false, int reconnectInterval = 5, int reconnectTries = 50, bool debug = false, ITickerLogger logger = null, bool isMarketOpen = false)
         {
             if (string.IsNullOrEmpty(userId))
                 throw new ArgumentNullException(nameof(userId), "User ID cannot be null or empty");
@@ -216,6 +215,7 @@ namespace OptionEdge.API.AliceBlue
             _timerTick = reconnectInterval;
             _retries = reconnectTries;
             _isReconnect = reconnect;
+            _isMarketOpen = isMarketOpen;
 
             _socketUrl = string.IsNullOrEmpty(socketUrl) ? Constants.DEFAULT_WEBSOCKET_URL : socketUrl;
 
@@ -392,27 +392,7 @@ namespace OptionEdge.API.AliceBlue
             }
         }
         
-        /// <summary>
-        /// Detects if the connection is in a half-open state.
-        /// </summary>
-        /// <returns>True if the connection is in a half-open state, false otherwise.</returns>
-        private bool IsConnectionHalfOpen()
-        {
-            // If we're connected but haven't had a successful operation in a while,
-            // the connection might be half-open
-            if (IsConnected &&
-                _lastSuccessfulOperation != DateTime.MinValue &&
-                DateTime.Now - _lastSuccessfulOperation > _halfOpenDetectionThreshold)
-            {
-                if (_debug)
-                    _logger.Debug($"Possible half-open connection detected. Last successful operation was {(DateTime.Now - _lastSuccessfulOperation).TotalSeconds:0.0} seconds ago");
-                
-                return true;
-            }
-            
-            return false;
-        }
-        
+       
         /// <summary>
         /// Checks if the system is under high load by monitoring timer delays.
         /// </summary>
@@ -640,14 +620,6 @@ namespace OptionEdge.API.AliceBlue
                 {
                     _logger.Warning("Network is back online. Forcing reconnection.");
                     _networkWasDown = false;
-                    ForceReconnect();
-                    return;
-                }
-                
-                // Check for half-open connection
-                if (IsConnectionHalfOpen())
-                {
-                    _logger.Warning("Half-open connection detected. Forcing reconnection.");
                     ForceReconnect();
                     return;
                 }
@@ -1023,8 +995,6 @@ namespace OptionEdge.API.AliceBlue
                 // Update heartbeat response time for any message received
                 _lastHeartbeatResponse = DateTime.Now;
                 
-                // Update last successful operation time
-                _lastSuccessfulOperation = DateTime.Now;
                 
                 // Reset failure counter on successful message
                 _consecutiveHealthCheckFailures = 0;
@@ -1437,8 +1407,6 @@ namespace OptionEdge.API.AliceBlue
                 
                 if (_debug) _logger.Debug($"Resubscribed to {quoteTokens.Length} quote tokens and {fullTokens.Length} full tokens");
                 
-                // Update last successful operation time
-                _lastSuccessfulOperation = DateTime.Now;
             }
             catch (Exception ex)
             {

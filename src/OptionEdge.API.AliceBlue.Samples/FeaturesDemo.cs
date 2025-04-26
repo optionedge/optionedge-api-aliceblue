@@ -18,7 +18,7 @@ namespace OptionEdge.API.AliceBlue.Samples
 
         static string _cachedTokenFile = "cached_token.txt";
 
-        public void Run()
+        public async void Run()
         {
             try
             {
@@ -54,7 +54,7 @@ namespace OptionEdge.API.AliceBlue.Samples
 
                 // Create Ticker instance
                 // No need to provide the userId, apiKey, it will be automatically set
-                _ticker = _aliceBlue.CreateTicker();
+                _ticker = await _aliceBlue.CreateTicker();
 
                 // Setup event handlers
                 _ticker.OnTick += _ticker_OnTick;
@@ -220,15 +220,15 @@ namespace OptionEdge.API.AliceBlue.Samples
                 // ==========================
                 // Day/net wise Position Book
                 // ==========================
-                var positionBookDayWise = _aliceBlue.GetPositionBookDayWise();
-                var positionBookNetWise = _aliceBlue.GetPositionBookNetWise();
+                var positionBookDayWise = await _aliceBlue.GetPositionBookDayWise();
+                var positionBookNetWise = await _aliceBlue.GetPositionBookNetWise();
 
 
 
                 // ==========================
                 // Place Order - Regular
                 // ==========================
-                var placeRegularOrderResult = _aliceBlue.PlaceOrder(new PlaceRegularOrderParams
+                var placeRegularOrderResult = await _aliceBlue.PlaceOrder(new PlaceRegularOrderParams
                 {
                     Exchange = Constants.EXCHANGE_NFO,
                     OrderTag = "Test",
@@ -244,7 +244,7 @@ namespace OptionEdge.API.AliceBlue.Samples
                 // ==========================
                 // Place Order - Cover
                 // ==========================
-                var placeCoverOrderResult = _aliceBlue.PlaceCoverOrder(new PlaceCoverOrderParams
+                var placeCoverOrderResult = await _aliceBlue.PlaceCoverOrder(new PlaceCoverOrderParams
                 {
                     Exchange = Constants.EXCHANGE_NSE,
                     OrderTag = "Test",
@@ -264,7 +264,7 @@ namespace OptionEdge.API.AliceBlue.Samples
                 // ==========================
                 // Place Order - Bracket
                 // ==========================
-                var placeBracketOrderResult = _aliceBlue.PlaceBracketOrder(new PlaceBracketOrderParams
+                var placeBracketOrderResult = await _aliceBlue.PlaceBracketOrder(new PlaceBracketOrderParams
                 {
                     Exchange = Constants.EXCHANGE_NSE,
                     OrderTag = "Test",
@@ -312,7 +312,7 @@ namespace OptionEdge.API.AliceBlue.Samples
                 {
                     Console.WriteLine($"Order executed. Order Number: {placeRegularOrderResult.OrderNumber}");
 
-                    var orderStatus = _aliceBlue.CancelOrder(placeRegularOrderResult.OrderNumber);
+                    var orderStatus = await _aliceBlue.CancelOrder(placeRegularOrderResult.OrderNumber);
                 }
 
             }

@@ -11,7 +11,7 @@ using RestSharp;
 
 namespace OptionEdge.API.AliceBlue
 {
-    public class AliceBlue
+    public class AliceBlue : IDisposable
     {
         string _baseUrl = "https://ant.aliceblueonline.com/rest/AliceBlueAPIService/api/";
         string _websocketUrl = "wss://ws1.aliceblueonline.com/NorenWS";
@@ -169,14 +169,14 @@ namespace OptionEdge.API.AliceBlue
         }
 
         private Ticker _ticker;
-        public virtual Ticker CreateTicker()
+        public virtual async Task<Ticker> CreateTicker()
         {
             // Only single ticker instance allowed
             if (_ticker != null) return _ticker;
 
-            CreateWebsocketSession();
+            await CreateWebsocketSessionAsync();
 
-            _ticker =  new Ticker(_userId, GetWebsocketAccessToken(), socketUrl: _websocketUrl, debug: _enableLogging);
+            _ticker = new Ticker(_userId, GetWebsocketAccessToken(), socketUrl: _websocketUrl, debug: _enableLogging);
 
             return _ticker;
         }
@@ -187,18 +187,18 @@ namespace OptionEdge.API.AliceBlue
         }
 
 
-        private void CreateWebsocketSession()
+        private async Task CreateWebsocketSessionAsync()
         {
             try
             {
-                var response = ExecutePost<WebsocketSessionResult>(
+                var response = await ExecutePostAsync<WebsocketSessionResult>(
                     _urls["ws.session.invalidate"],
                     new WebsocketAccessTokenParams
                     {
                         LoginType = "API"
                     });
 
-                response = ExecutePost<WebsocketSessionResult>(
+                response = await ExecutePostAsync<WebsocketSessionResult>(
                     _urls["ws.session.create"],
                     new WebsocketAccessTokenParams
                     {
@@ -208,8 +208,14 @@ namespace OptionEdge.API.AliceBlue
             catch (Exception ex)
             {
                 if (_enableLogging)
-                    Utils.LogMessage($"Error creating websocket session.{ex.Message}");
+                    Utils.LogMessage($"Error creating websocket session: {ex.Message}");
             }
+        }
+        
+        // Legacy method for backward compatibility
+        private void CreateWebsocketSession()
+        {
+            CreateWebsocketSessionAsync().GetAwaiter().GetResult();
         }
 
         private string GetWebsocketAccessToken()
@@ -217,20 +223,30 @@ namespace OptionEdge.API.AliceBlue
             return Utils.GetSHA256(Utils.GetSHA256(_accessToken));
         }
 
-        public virtual FundsResult[] GetFunds()
+        public virtual async Task<FundsResult[]> GetFunds()
         {
-            return ExecuteGet<FundsResult[]>(_urls["funds.limits"]);
+            return await ExecuteGetAsync<FundsResult[]>(_urls["funds.limits"]);
         }
 
-        // Not working - making it private
-        public virtual SquareOffPositionResult SquareOffPosition(SquareOffPositionParams squareOffPositionParams)
+        /// <summary>
+        /// Square off an existing position
+        /// </summary>
+        /// <param name="squareOffPositionParams">Parameters for square off position</param>
+        /// <returns>Result of the square off operation</returns>
+        public virtual async Task<SquareOffPositionResult> SquareOffPosition(SquareOffPositionParams squareOffPositionParams)
         {
-            return ExecutePost<SquareOffPositionResult>(_urls["square.off.position"], squareOffPositionParams);
+            if (squareOffPositionParams == null)
+                throw new ArgumentNullException(nameof(squareOffPositionParams), "Square off position parameters cannot be null");
+                
+            return await ExecutePostAsync<SquareOffPositionResult>(_urls["square.off.position"], squareOffPositionParams);
         }
 
-        public virtual OrderHistoryResult[] GetOrderHistory(string orderNumber)
+        public virtual async Task<OrderHistoryResult[]> GetOrderHistory(string orderNumber)
         {
-            return ExecutePost<OrderHistoryResult[]>(_urls["order.history"], new OrderHistoryParams { OrderNumber = orderNumber });
+            if (string.IsNullOrEmpty(orderNumber))
+                throw new ArgumentNullException(nameof(orderNumber), "Order number cannot be null or empty");
+                
+            return await ExecutePostAsync<OrderHistoryResult[]>(_urls["order.history"], new OrderHistoryParams { OrderNumber = orderNumber });
         }
 
         /// <summary>
@@ -248,15 +264,20 @@ namespace OptionEdge.API.AliceBlue
 
         public virtual async Task<OrderHistoryResult> GetOrderHistory(string orderNumber, Func<string, bool> hasOrderStatus, int maxRetries = 5, int retryDelay = 500)
         {
+            if (string.IsNullOrEmpty(orderNumber))
+                throw new ArgumentNullException(nameof(orderNumber), "Order number cannot be null or empty");
+                
+            if (hasOrderStatus == null)
+                throw new ArgumentNullException(nameof(hasOrderStatus), "Order status predicate cannot be null");
+                
             int retry = 1;
-
             OrderHistoryResult orderHistory = null;
 
             while (retry <= maxRetries)
             {
                 retry++;
 
-                var orderHistories = GetOrderHistory(orderNumber);
+                var orderHistories = await GetOrderHistory(orderNumber);
                 if (orderHistories != null && orderHistories.Length > 0)
                 {
                     orderHistory = orderHistories.Where(x => hasOrderStatus(x.OrderStatus)).FirstOrDefault();
@@ -274,20 +295,21 @@ namespace OptionEdge.API.AliceBlue
             return orderHistory;
         }
 
-        public virtual OrderBookResult[] GetOrderBook()
+        public virtual async Task<OrderBookResult[]> GetOrderBook()
         {
-            return ExecuteGet<OrderBookResult[]>(_urls["order.book"]);
+            return await ExecuteGetAsync<OrderBookResult[]>(_urls["order.book"]);
         }
 
-        public virtual TradeBookResult[] GetTradeBook()
+        public virtual async Task<TradeBookResult[]> GetTradeBook()
         {
-            return ExecuteGet<TradeBookResult[]>(_urls["trade.book"]);
+            return await ExecuteGetAsync<TradeBookResult[]>(_urls["trade.book"]);
         }
 
-        public virtual HistoryDataResult GetHistoricalData(HistoryDataParams historyDataParams)
+        public virtual async Task<HistoryDataResult> GetHistoricalData(HistoryDataParams historyDataParams)
         {
-            //return ExecuteGet<HistoryDataResult>(_urls["history"], historyDataParams);
-
+            if (historyDataParams == null)
+                throw new ArgumentNullException(nameof(historyDataParams), "History data parameters cannot be null");
+                
             var historicalDataBaseUrl = "https://a3-chart.aliceblueonline.com/omk/rest/ChartAPIService/chart/history";
 
             HistoryDataResult result = null;
@@ -307,7 +329,7 @@ namespace OptionEdge.API.AliceBlue
                 request.AddQueryParameter("resolution", historyDataParams.Interval);
                 request.AddQueryParameter("user", _userId);
 
-                var response = restClient.ExecuteGet<HistoryDataResult>(request);
+                var response = await restClient.ExecuteGetAsync<HistoryDataResult>(request);
 
                 if (response.StatusCode == System.Net.HttpStatusCode.OK && response.Data != null)
                 {
@@ -332,8 +354,14 @@ namespace OptionEdge.API.AliceBlue
             return result;
         }
 
-        public virtual HistoryDataResult GetHistoricalData(string exchange, int instrumentToken, DateTime from, DateTime to, string interval, bool index = false)
+        public virtual async Task<HistoryDataResult> GetHistoricalData(string exchange, int instrumentToken, DateTime from, DateTime to, string interval, bool index = false)
         {
+            if (string.IsNullOrEmpty(exchange))
+                throw new ArgumentNullException(nameof(exchange), "Exchange cannot be null or empty");
+                
+            if (string.IsNullOrEmpty(interval))
+                throw new ArgumentNullException(nameof(interval), "Interval cannot be null or empty");
+                
             HistoryDataParams historyDataParams = new HistoryDataParams
             {
                 Exchange = exchange,
@@ -343,34 +371,52 @@ namespace OptionEdge.API.AliceBlue
                 Interval = interval,
             };
 
-            return GetHistoricalData(historyDataParams);
+            return await GetHistoricalData(historyDataParams);
         }
 
-        public virtual ModifyOrderResult ModifyOrder(ModifyOrderParams modifyOrderParams)
+        public virtual async Task<ModifyOrderResult> ModifyOrder(ModifyOrderParams modifyOrderParams)
         {
-            return ExecutePost<ModifyOrderResult>(_urls["order.modify"], modifyOrderParams);
+            if (modifyOrderParams == null)
+                throw new ArgumentNullException(nameof(modifyOrderParams), "Modify order parameters cannot be null");
+                
+            return await ExecutePostAsync<ModifyOrderResult>(_urls["order.modify"], modifyOrderParams);
         }
 
-        public virtual CancelOrderResult CancelOrder(string orderNumber)
+        public virtual async Task<CancelOrderResult> CancelOrder(string orderNumber)
         {
-            return ExecutePost<CancelOrderResult>(_urls["order.cancel"], new CancelOrderParams
+            if (string.IsNullOrEmpty(orderNumber))
+                throw new ArgumentNullException(nameof(orderNumber), "Order number cannot be null or empty");
+                
+            return await ExecutePostAsync<CancelOrderResult>(_urls["order.cancel"], new CancelOrderParams
             {
                 OrderNumber = orderNumber
             });
         }
 
-        public virtual ExitBracketOrderResult ExitBracketOrder(ExitBracketOrderParams exitBracketOrderParams)
+        public virtual async Task<ExitBracketOrderResult> ExitBracketOrder(ExitBracketOrderParams exitBracketOrderParams)
         {
-            return ExecutePost<ExitBracketOrderResult>(_urls["order.bracket.exit"], exitBracketOrderParams);
+            if (exitBracketOrderParams == null)
+                throw new ArgumentNullException(nameof(exitBracketOrderParams), "Exit bracket order parameters cannot be null");
+                
+            return await ExecutePostAsync<ExitBracketOrderResult>(_urls["order.bracket.exit"], exitBracketOrderParams);
         }
 
-        public virtual ExitCoverOrderResult ExitCoverOrder(ExitCoverOrderParams exitCoverOrder)
+        public virtual async Task<ExitCoverOrderResult> ExitCoverOrder(ExitCoverOrderParams exitCoverOrder)
         {
-            return ExecutePost<ExitCoverOrderResult>(_urls["order.cover.exit"], exitCoverOrder);
+            if (exitCoverOrder == null)
+                throw new ArgumentNullException(nameof(exitCoverOrder), "Exit cover order parameters cannot be null");
+                
+            return await ExecutePostAsync<ExitCoverOrderResult>(_urls["order.cover.exit"], exitCoverOrder);
         }
 
-        public virtual OpenInterestResult[] GetOpenInterest(string exchange, int[] tokens)
+        public virtual async Task<OpenInterestResult[]> GetOpenInterest(string exchange, int[] tokens)
         {
+            if (string.IsNullOrEmpty(exchange))
+                throw new ArgumentNullException(nameof(exchange), "Exchange cannot be null or empty");
+                
+            if (tokens == null || tokens.Length == 0)
+                throw new ArgumentException("Tokens array cannot be null or empty", nameof(tokens));
+                
             var openInterestParams = new OpenInterestParams
             {
                 OpenInterestTokens = tokens.Select(token => new OpenInterestToken
@@ -380,97 +426,126 @@ namespace OptionEdge.API.AliceBlue
                 }).ToArray()
             };
        
-            return GetOpenInterest(openInterestParams);
+            return await GetOpenInterest(openInterestParams);
         }
 
-        public virtual OpenInterestResult[] GetOpenInterest(OpenInterestParams tokens)
+        public virtual async Task<OpenInterestResult[]> GetOpenInterest(OpenInterestParams tokens)
         {
+            if (tokens == null)
+                throw new ArgumentNullException(nameof(tokens), "Open interest parameters cannot be null");
+                
+            if (tokens.OpenInterestTokens == null || tokens.OpenInterestTokens.Length == 0)
+                throw new ArgumentException("Open interest tokens cannot be null or empty", nameof(tokens));
+                
             var openInterestParamsInternal = new OpenInterestParamsInternal
             {
                 OpenInterestTokens = tokens.OpenInterestTokens,
                 UserId = _userId,
             };
 
-            return ExecutePost<OpenInterestResult[]>(_urls["scrip.open.interest"], openInterestParamsInternal);
+            return await ExecutePostAsync<OpenInterestResult[]>(_urls["scrip.open.interest"], openInterestParamsInternal);
         }
 
-        public virtual AccountDetails GetAccountDetails()
+        public virtual async Task<AccountDetails> GetAccountDetails()
         {
-            return ExecuteGet<AccountDetails>(_urls["profile.account"]);
+            return await ExecuteGetAsync<AccountDetails>(_urls["profile.account"]);
         }
 
-        public virtual PositionBookResult[] GetPositionBookDayWise()
+        public virtual async Task<PositionBookResult[]> GetPositionBookDayWise()
         {
-            return GetPosition(Constants.POSITION_DAYWISE);
+            return await GetPosition(Constants.POSITION_DAYWISE);
         }
-        public virtual PositionBookResult[] GetPositionBookNetWise()
+        
+        public virtual async Task<PositionBookResult[]> GetPositionBookNetWise()
         {
-            return GetPosition(Constants.POSITION_NETWISE);
+            return await GetPosition(Constants.POSITION_NETWISE);
         }
 
-        protected virtual PositionBookResult[] GetPosition(string retentionType)
+        protected virtual async Task<PositionBookResult[]> GetPosition(string retentionType)
         {
-            return ExecutePost<PositionBookResult[]>(
+            if (string.IsNullOrEmpty(retentionType))
+                throw new ArgumentNullException(nameof(retentionType), "Retention type cannot be null or empty");
+                
+            return await ExecutePostAsync<PositionBookResult[]>(
                 _urls["portfolio.position.book"],
                 new PositionBookParams
                 {
                     RetentionType = retentionType
                 });
         }
-        public virtual ScriptQuoteResult GetScripQuote(string exchange, int instrumentToken)
+        public virtual async Task<ScriptQuoteResult> GetScripQuote(string exchange, int instrumentToken)
         {
-            var res = ExecutePost<ScriptQuoteResult>(
+            if (string.IsNullOrEmpty(exchange))
+                throw new ArgumentNullException(nameof(exchange), "Exchange cannot be null or empty");
+                
+            return await ExecutePostAsync<ScriptQuoteResult>(
                 _urls["scrip.quote"],
                 new ScriptQuoteParams
                 {
                     Exchange = exchange.ToUpper(),
                     InstrumentToken = instrumentToken
                 });
-
-            return res;
         }
 
-        public virtual HoldingsResult GetHoldings()
+        public virtual async Task<HoldingsResult> GetHoldings()
         {
-            return ExecuteGet<HoldingsResult>(_urls["portfolio.holdings"]);
+            return await ExecuteGetAsync<HoldingsResult>(_urls["portfolio.holdings"]);
         }
 
-        public virtual PlaceRegularOrderResult PlaceOrder(PlaceRegularOrderParams order)
+        public virtual async Task<PlaceRegularOrderResult> PlaceOrder(PlaceRegularOrderParams order)
         {
-            var placeOrderResult = PlaceOrder(new PlaceRegularOrderParams[] { order });
+            if (order == null)
+                throw new ArgumentNullException(nameof(order), "Order parameters cannot be null");
+                
+            var placeOrderResult = await PlaceOrder(new PlaceRegularOrderParams[] { order });
             return placeOrderResult != null ? placeOrderResult[0] : null;
         }
 
-        public virtual PlaceCoverOrderResult PlaceOrder(PlaceCoverOrderParams order)
+        public virtual async Task<PlaceCoverOrderResult> PlaceOrder(PlaceCoverOrderParams order)
         {
-            var placeOrderResult = PlaceOrder(new PlaceCoverOrderParams[] { order });
+            if (order == null)
+                throw new ArgumentNullException(nameof(order), "Order parameters cannot be null");
+                
+            var placeOrderResult = await PlaceOrder(new PlaceCoverOrderParams[] { order });
             return placeOrderResult != null ? placeOrderResult[0] : null;
         }
 
-        public virtual PlaceBracketOrderResult PlaceOrder(PlaceBracketOrderParams order)
+        public virtual async Task<PlaceBracketOrderResult> PlaceOrder(PlaceBracketOrderParams order)
         {
-            var placeOrderResult = PlaceOrder(new PlaceBracketOrderParams[] { order });
+            if (order == null)
+                throw new ArgumentNullException(nameof(order), "Order parameters cannot be null");
+                
+            var placeOrderResult = await PlaceOrder(new PlaceBracketOrderParams[] { order });
             return placeOrderResult != null ? placeOrderResult[0] : null;
         }
 
-        public virtual PlaceCoverOrderResult[] PlaceOrder(PlaceCoverOrderParams[] orders)
+        public virtual async Task<PlaceCoverOrderResult[]> PlaceOrder(PlaceCoverOrderParams[] orders)
         {
-            return PlaceCoverOrder(orders);
+            if (orders == null || orders.Length == 0)
+                throw new ArgumentException("Orders array cannot be null or empty", nameof(orders));
+                
+            return await PlaceCoverOrder(orders);
         }
 
-        public virtual PlaceBracketOrderResult[] PlaceOrder(PlaceBracketOrderParams[] orders)
+        public virtual async Task<PlaceBracketOrderResult[]> PlaceOrder(PlaceBracketOrderParams[] orders)
         {
-            return PlaceBracketOrder(orders);
+            if (orders == null || orders.Length == 0)
+                throw new ArgumentException("Orders array cannot be null or empty", nameof(orders));
+                
+            return await PlaceBracketOrder(orders);
         }
 
-        public virtual PlaceRegularOrderResult[] PlaceOrder(PlaceRegularOrderParams[] orders)
+        public virtual async Task<PlaceRegularOrderResult[]> PlaceOrder(PlaceRegularOrderParams[] orders)
         {
+            if (orders == null || orders.Length == 0)
+                throw new ArgumentException("Orders array cannot be null or empty", nameof(orders));
+                
             foreach (var order in orders)
             {
                 PlaceOrderValidateRequiredArguments(order);
 
                 if (string.IsNullOrEmpty(order.ProductCode))
-                    throw new ArgumentNullException("Product code required.");
+                    throw new ArgumentNullException(nameof(order.ProductCode), "Product code required.");
 
                 if (string.IsNullOrEmpty(order.Exchange))
                     order.Exchange = Constants.EXCHANGE_NFO;
@@ -484,23 +559,28 @@ namespace OptionEdge.API.AliceBlue
                 order.Complexty = Constants.ORDER_COMPLEXITY_REGULAR;
             }
 
-            return ExecutePost<PlaceRegularOrderResult[]>(_urls["order.place"], orders);
+            return await ExecutePostAsync<PlaceRegularOrderResult[]>(_urls["order.place"], orders);
         }
 
-        public virtual PlaceCoverOrderResult PlaceCoverOrder(PlaceCoverOrderParams order)
+        public virtual async Task<PlaceCoverOrderResult> PlaceCoverOrder(PlaceCoverOrderParams order)
         {
-            return PlaceCoverOrder(new PlaceCoverOrderParams[] { order })[0];
+            if (order == null)
+                throw new ArgumentNullException(nameof(order), "Order parameters cannot be null");
+                
+            var result = await PlaceCoverOrder(new PlaceCoverOrderParams[] { order });
+            return result != null && result.Length > 0 ? result[0] : null;
         }
-        public virtual PlaceCoverOrderResult[] PlaceCoverOrder(PlaceCoverOrderParams[] orders)
+        public virtual async Task<PlaceCoverOrderResult[]> PlaceCoverOrder(PlaceCoverOrderParams[] orders)
         {
+            if (orders == null || orders.Length == 0)
+                throw new ArgumentException("Orders array cannot be null or empty", nameof(orders));
+                
             foreach (var order in orders)
             {
                 PlaceOrderValidateRequiredArguments(order);
 
-                //if (order.TrailingStopLoss <= 0)
-                //    throw new ArgumentNullException("Trailing stop loss required.");
                 if (order.StopLoss <= 0)
-                    throw new ArgumentNullException("Stop loss required.");
+                    throw new ArgumentException("Stop loss required and must be greater than zero", nameof(order.StopLoss));
 
                 if (string.IsNullOrEmpty(order.Exchange))
                     order.Exchange = Constants.EXCHANGE_NFO;
@@ -515,27 +595,31 @@ namespace OptionEdge.API.AliceBlue
                 order.ProductCode = Constants.PRODUCT_CODE_CO;
             }
 
-            return ExecutePost<PlaceCoverOrderResult[]>(_urls["order.place"], orders);
+            return await ExecutePostAsync<PlaceCoverOrderResult[]>(_urls["order.place"], orders);
         }
 
-        public virtual PlaceBracketOrderResult PlaceBracketOrder(PlaceBracketOrderParams order)
+        public virtual async Task<PlaceBracketOrderResult> PlaceBracketOrder(PlaceBracketOrderParams order)
         {
-            return PlaceBracketOrder(new PlaceBracketOrderParams[] { order })[0];
+            if (order == null)
+                throw new ArgumentNullException(nameof(order), "Order parameters cannot be null");
+                
+            var result = await PlaceBracketOrder(new PlaceBracketOrderParams[] { order });
+            return result != null && result.Length > 0 ? result[0] : null;
         }
 
-        public virtual PlaceBracketOrderResult[] PlaceBracketOrder(PlaceBracketOrderParams[] orders)
+        public virtual async Task<PlaceBracketOrderResult[]> PlaceBracketOrder(PlaceBracketOrderParams[] orders)
         {
+            if (orders == null || orders.Length == 0)
+                throw new ArgumentException("Orders array cannot be null or empty", nameof(orders));
+                
             foreach (var order in orders)
             {
                 PlaceOrderValidateRequiredArguments(order);
 
-                //if (order.TrailingStopLoss <= 0)
-                //    throw new ArgumentNullException("Trailing stop loss required.");
                 if (order.StopLoss <= 0)
-                    throw new ArgumentNullException("Stop loss required.");
+                    throw new ArgumentException("Stop loss required and must be greater than zero", nameof(order.StopLoss));
                 if (order.Target <= 0)
-                    throw new ArgumentNullException("Target required.");
-
+                    throw new ArgumentException("Target required and must be greater than zero", nameof(order.Target));
 
                 if (string.IsNullOrEmpty(order.Exchange))
                     order.Exchange = Constants.EXCHANGE_NFO;
@@ -550,7 +634,7 @@ namespace OptionEdge.API.AliceBlue
                 order.ProductCode = Constants.PRODUCT_CODE_BO;
             }
 
-            return ExecutePost<PlaceBracketOrderResult[]>(_urls["order.place"], orders);
+            return await ExecutePostAsync<PlaceBracketOrderResult[]>(_urls["order.place"], orders);
         }
 
         protected virtual void PlaceOrderValidateRequiredArguments(PlaceRegularOrderParams order)
@@ -577,14 +661,20 @@ namespace OptionEdge.API.AliceBlue
         /// <param name="exchange"></param>
         /// <param name="filePath"></param>
         /// <exception cref="DirectoryNotFoundException">File directory should exists.</exception>
-        public virtual void SaveMasterContracts(string exchange, string filePath)
+        public virtual async Task SaveMasterContracts(string exchange, string filePath)
         {
-            var result = DownloadMasterContract(exchange, (stream) =>
-             {
-                 var fileStream = File.Create(filePath);
-                 stream.CopyTo(fileStream);
-                 fileStream.Close();
-             }).Result;
+            if (string.IsNullOrEmpty(exchange))
+                throw new ArgumentNullException(nameof(exchange), "Exchange cannot be null or empty");
+                
+            if (string.IsNullOrEmpty(filePath))
+                throw new ArgumentNullException(nameof(filePath), "File path cannot be null or empty");
+                
+            await DownloadMasterContract(exchange, (stream) =>
+            {
+                var fileStream = File.Create(filePath);
+                stream.CopyTo(fileStream);
+                fileStream.Close();
+            });
         }
 
         protected virtual async Task<bool> DownloadMasterContract(string exchange, Action<Stream> processStream)
@@ -609,12 +699,12 @@ namespace OptionEdge.API.AliceBlue
             return true;
         }
 
-        public virtual BasketMarginResult GetBasketMargin(List<BasketMarginItem> basketItems)
+        public virtual async Task<BasketMarginResult> GetBasketMargin(List<BasketMarginItem> basketItems)
         {
             if (basketItems == null || basketItems.Count == 0)
-                throw new ArgumentException("Basket items list cannot be empty.");
+                throw new ArgumentException("Basket items list cannot be empty.", nameof(basketItems));
 
-            return ExecutePost<BasketMarginResult>(_urls["basket.margin"], basketItems);
+            return await ExecutePostAsync<BasketMarginResult>(_urls["basket.margin"], basketItems);
         }
 
         public virtual async Task<IList<Contract>> GetMasterContracts(string exchange)
@@ -665,25 +755,36 @@ namespace OptionEdge.API.AliceBlue
             return contracts;
         }
 
+        public async Task<T> ExecutePostAsync<T>(string endpoint, object inputParams = null) where T : class
+        {
+            return await ExecuteAsync<T>(endpoint, inputParams, Method.Post);
+        }
+        
+        public async Task<T> ExecuteGetAsync<T>(string endpoint, object inputParams = null) where T : class
+        {
+            return await ExecuteAsync<T>(endpoint, inputParams, Method.Get);
+        }
+        
+        // Legacy methods for backward compatibility
         public T ExecutePost<T>(string endpoint, object inputParams = null) where T : class
         {
-            return Execute<T>(endpoint, inputParams, Method.Post);
+            return ExecuteAsync<T>(endpoint, inputParams, Method.Post).GetAwaiter().GetResult();
         }
+        
         public T ExecuteGet<T>(string endpoint, object inputParams = null) where T : class
         {
-            return Execute<T>(endpoint, inputParams, Method.Get);
+            return ExecuteAsync<T>(endpoint, inputParams, Method.Get).GetAwaiter().GetResult();
         }
 
-        protected T Execute<T>(string endpoint, object inputParams = null, Method method = Method.Get) where T : class
+        protected async Task<T> ExecuteAsync<T>(string endpoint, object inputParams = null, Method method = Method.Get) where T : class
         {
             var request = new RestRequest(endpoint);
 
             if (inputParams != null)
                 request.AddStringBody(Utils.Serialize(inputParams), ContentType.Json);
 
-            var response = _restClient.ExecuteAsync<T>(request, method).Result;
+            var response = await _restClient.ExecuteAsync<T>(request, method);
 
-            BaseResponseResult responseStatus = null;
             if (!string.IsNullOrEmpty(response.Content))
             {
                 if (response.Content == "Unauthorized")
@@ -691,11 +792,12 @@ namespace OptionEdge.API.AliceBlue
                     throw new UnauthorizedAccessException(response.ErrorException?.ToString());
                 }
 
-                if (response.Content.Contains(Constants.API_RESPONSE_STATUS_Not_OK) && _enableLogging)
+                if (response.Content.Contains(Constants.API_RESPONSE_STATUS_Not_OK))
                 {
-                    var errorMessage = $"Error executing api request. Status: {response.StatusCode}-{response.ErrorMessage}";
-                    Utils.LogMessage(errorMessage);
-                    throw new UnauthorizedAccessException(errorMessage);
+                    var errorMessage = $"Error executing API request. Status: {response.StatusCode}-{response.ErrorMessage}";
+                    if (_enableLogging)
+                        Utils.LogMessage(errorMessage);
+                    throw new InvalidOperationException(errorMessage);
                 }
             }
 
@@ -717,6 +819,34 @@ namespace OptionEdge.API.AliceBlue
                     throw new UnauthorizedAccessException(errorMessage);
 
                 return default(T);
+            }
+        }
+        
+        // Legacy method for backward compatibility
+        protected T Execute<T>(string endpoint, object inputParams = null, Method method = Method.Get) where T : class
+        {
+            return ExecuteAsync<T>(endpoint, inputParams, method).GetAwaiter().GetResult();
+        }
+        
+        /// <summary>
+        /// Disposes the resources used by the AliceBlue client
+        /// </summary>
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        
+        /// <summary>
+        /// Disposes the resources used by the AliceBlue client
+        /// </summary>
+        /// <param name="disposing">True if disposing managed resources</param>
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _restClient?.Dispose();
+                _ticker?.Dispose();
             }
         }
     }
