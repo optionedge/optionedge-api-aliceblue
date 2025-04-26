@@ -818,6 +818,31 @@ namespace OptionEdge.API.AliceBlue
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
                     throw new UnauthorizedAccessException(errorMessage);
 
+                // Create a new instance of T with Status and ErrorMessage set
+                // instead of returning default(T)
+                if (typeof(BaseResponseResult).IsAssignableFrom(typeof(T)))
+                {
+                    try
+                    {
+                        // Create a new instance of T
+                        var result = Activator.CreateInstance<T>();
+                        
+                        // Set the Status and ErrorMessage properties
+                        if (result is BaseResponseResult baseResult)
+                        {
+                            baseResult.Status = Constants.STATUS_NOT_OK;
+                            baseResult.ErrorMessage = response.ErrorMessage ?? errorMessage;
+                        }
+                        
+                        return result;
+                    }
+                    catch (Exception ex)
+                    {
+                        if (_enableLogging)
+                            Utils.LogMessage($"Error creating instance of {typeof(T).Name}: {ex.Message}");
+                    }
+                }
+
                 return default(T);
             }
         }
