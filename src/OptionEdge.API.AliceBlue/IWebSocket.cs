@@ -13,7 +13,7 @@ namespace OptionEdge.API.AliceBlue
         event OnSocketDataHandler OnData;
         event OnSocketErrorHandler OnError;
         bool IsConnected();
-        void Connect(string Url, Dictionary<string, string> headers = null);
+        Task ConnectAsync(string Url, Dictionary<string, string> headers = null);
         void Send(string Message);
         void Close(bool Abort = false);
     }

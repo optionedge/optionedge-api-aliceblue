@@ -49,7 +49,7 @@ This version has breaking changes from previous version
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 2.0.4
+Install-Package OptionEdge.API.AliceBlue -Version 2.0.5
 ```
 
 ## Sample project

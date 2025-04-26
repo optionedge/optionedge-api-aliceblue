@@ -135,6 +135,7 @@ namespace OptionEdge.API.AliceBlue
         private readonly object _tickLock = new object();
         private readonly object _connectionLock = new object();
         private readonly object _reconnectLock = new object();
+
         private bool _reconnectionInProgress = false;
 
         private System.Timers.Timer _timer;
@@ -727,153 +728,150 @@ namespace OptionEdge.API.AliceBlue
             _consecutiveRateLimitErrors = 0;
             _rateLimitBackoffUntil = DateTime.MinValue;
         }
-        
-        private void ForceReconnect()
+
+        private async void ForceReconnect()
         {
-            // Use a lock to prevent concurrent reconnection attempts
-            lock (_reconnectLock)
+
+            // Check if reconnection is already in progress
+            if (_reconnectionInProgress)
             {
-                // Check if reconnection is already in progress
-                if (_reconnectionInProgress)
+                if (_debug)
+                    _logger.Debug("Reconnection already in progress. Skipping this attempt.");
+                return;
+            }
+
+            _reconnectionInProgress = true;
+
+            try
+            {
+                // In aggressive mode, ignore the minimum interval
+                if (!_aggressiveReconnectMode && DateTime.Now - _lastForceReconnectAttempt < _minForceReconnectInterval)
                 {
-                    if (_debug)
-                        _logger.Debug("Reconnection already in progress. Skipping this attempt.");
+                    _logger.Warning($"Force reconnect attempt too soon after previous attempt, delaying. Will try again in {(_minForceReconnectInterval - (DateTime.Now - _lastForceReconnectAttempt)).TotalSeconds:0.0} seconds.");
                     return;
                 }
-                
-                _reconnectionInProgress = true;
-                
+
+                _lastForceReconnectAttempt = DateTime.Now;
+
+                // Update reconnect cycle count and toggle mode if needed
+                _reconnectCycleCount++;
+                if (_reconnectCycleCount >= _reconnectCycleThreshold)
+                {
+                    _aggressiveReconnectMode = !_aggressiveReconnectMode;
+                    _reconnectCycleCount = 0;
+                    _logger.Warning($"Switching reconnection mode to: {(_aggressiveReconnectMode ? "AGGRESSIVE" : "NORMAL")}");
+                }
+
+                _logger.Warning($"FORCING RECONNECTION - {(_aggressiveReconnectMode ? "Aggressive" : "Normal")} reconnect strategy");
+
+                // Make sure reconnect is enabled
+                if (!_isReconnect)
+                {
+                    _logger.Warning("Reconnect was disabled. Enabling it now.");
+                    EnableReconnect();
+                }
+
+                // Close the current connection
                 try
                 {
-                    // In aggressive mode, ignore the minimum interval
-                    if (!_aggressiveReconnectMode && DateTime.Now - _lastForceReconnectAttempt < _minForceReconnectInterval)
+                    if (IsConnected)
                     {
-                        _logger.Warning($"Force reconnect attempt too soon after previous attempt, delaying. Will try again in {(_minForceReconnectInterval - (DateTime.Now - _lastForceReconnectAttempt)).TotalSeconds:0.0} seconds.");
-                        return;
+                        _logger.Warning("Closing existing connection before force reconnect");
+                        _ws.Close(true);
                     }
-                    
-                    _lastForceReconnectAttempt = DateTime.Now;
-                    
-                    // Update reconnect cycle count and toggle mode if needed
-                    _reconnectCycleCount++;
-                    if (_reconnectCycleCount >= _reconnectCycleThreshold)
-                    {
-                        _aggressiveReconnectMode = !_aggressiveReconnectMode;
-                        _reconnectCycleCount = 0;
-                        _logger.Warning($"Switching reconnection mode to: {(_aggressiveReconnectMode ? "AGGRESSIVE" : "NORMAL")}");
-                    }
-                    
-                    _logger.Warning($"FORCING RECONNECTION - {(_aggressiveReconnectMode ? "Aggressive" : "Normal")} reconnect strategy");
-                    
-                    // Make sure reconnect is enabled
-                    if (!_isReconnect)
-                    {
-                        _logger.Warning("Reconnect was disabled. Enabling it now.");
-                        EnableReconnect();
-                    }
-                    
-                    // Close the current connection
-                    try
-                    {
-                        if (IsConnected)
-                        {
-                            _logger.Warning("Closing existing connection before force reconnect");
-                            _ws.Close(true);
-                        }
-                    }
-                    catch (Exception closeEx)
-                    {
-                        _logger.Error("Error closing connection during force reconnect", closeEx);
-                        // Continue anyway
-                    }
-                    
-                    // Reset state
-                    _isReady = false;
-                    _retryCount = 0;
-                    _lastReconnectAttempt = DateTime.MinValue; // Reset this to allow immediate reconnect
-                    
-                    // Stop and restart timers
-                    try
-                    {
-                        _timer.Stop();
-                        _timerHeartbeat.Stop();
-                        _connectionHealthCheck.Stop();
-                        
-                        _timerTick = _aggressiveReconnectMode ? 1 : _interval; // Use very short interval in aggressive mode
-                        _timer.Start();
-                        _connectionHealthCheck.Start();
-                        _networkCheckTimer.Start();
-                    }
-                    catch (Exception timerEx)
-                    {
-                        _logger.Error("Error managing timers during force reconnect", timerEx);
-                        // Continue anyway
-                    }
-                    
-                    // Create a new WebSocket instance if the current one is in a bad state
-                    try
-                    {
-                        if (_ws == null || (_ws.IsConnected() && !_isReady))
-                        {
-                            _logger.Warning("Creating new WebSocket instance");
-                            
-                            // Unsubscribe from old events
-                            if (_ws != null)
-                            {
-                                _ws.OnConnect -= HandleConnect;
-                                _ws.OnData -= HandleData;
-                                _ws.OnClose -= HandleClose;
-                                _ws.OnError -= HandleError;
-                            }
-                            
-                            // Create new instance
-                            _ws = new WebSocket();
-                            
-                            // Subscribe to events
-                            _ws.OnConnect += HandleConnect;
-                            _ws.OnData += HandleData;
-                            _ws.OnClose += HandleClose;
-                            _ws.OnError += HandleError;
-                        }
-                    }
-                    catch (Exception wsEx)
-                    {
-                        _logger.Error("Error recreating WebSocket during force reconnect", wsEx);
-                        // Continue anyway
-                    }
-                    
-                    // Directly call Connect to bypass the reconnection delay
-                    _logger.Warning("Calling Connect() directly from ForceReconnect");
-                    Connect();
-                    
-                    // Log the attempt
-                    _logger.Warning("Force reconnect attempt completed");
                 }
-                catch (Exception ex)
+                catch (Exception closeEx)
                 {
-                    _logger.Error("Error in ForceReconnect", ex);
-                    
-                    // Last resort - try to reconnect anyway
-                    try
+                    _logger.Error("Error closing connection during force reconnect", closeEx);
+                    // Continue anyway
+                }
+
+                // Reset state
+                _isReady = false;
+                _retryCount = 0;
+                _lastReconnectAttempt = DateTime.MinValue; // Reset this to allow immediate reconnect
+
+                // Stop and restart timers
+                try
+                {
+                    _timer.Stop();
+                    _timerHeartbeat.Stop();
+                    _connectionHealthCheck.Stop();
+
+                    _timerTick = _aggressiveReconnectMode ? 1 : _interval; // Use very short interval in aggressive mode
+                    _timer.Start();
+                    _connectionHealthCheck.Start();
+                    _networkCheckTimer.Start();
+                }
+                catch (Exception timerEx)
+                {
+                    _logger.Error("Error managing timers during force reconnect", timerEx);
+                    // Continue anyway
+                }
+
+                // Create a new WebSocket instance if the current one is in a bad state
+                try
+                {
+                    if (_ws == null || (_ws.IsConnected() && !_isReady))
                     {
+                        _logger.Warning("Creating new WebSocket instance");
+
+                        // Unsubscribe from old events
+                        if (_ws != null)
+                        {
+                            _ws.OnConnect -= HandleConnect;
+                            _ws.OnData -= HandleData;
+                            _ws.OnClose -= HandleClose;
+                            _ws.OnError -= HandleError;
+                        }
+
+                        // Create new instance
                         _ws = new WebSocket();
+
+                        // Subscribe to events
                         _ws.OnConnect += HandleConnect;
                         _ws.OnData += HandleData;
                         _ws.OnClose += HandleClose;
                         _ws.OnError += HandleError;
-                        
-                        _ws.Connect(_socketUrl);
-                    }
-                    catch (Exception lastEx)
-                    {
-                        _logger.Error("Last resort reconnection also failed", lastEx);
                     }
                 }
-                finally
+                catch (Exception wsEx)
                 {
-                    // Always reset the flag when done
-                    _reconnectionInProgress = false;
+                    _logger.Error("Error recreating WebSocket during force reconnect", wsEx);
+                    // Continue anyway
                 }
+
+                // Directly call Connect to bypass the reconnection delay
+                _logger.Warning("Calling Connect() directly from ForceReconnect");
+                Connect();
+
+                // Log the attempt
+                _logger.Warning("Force reconnect attempt completed");
+            }
+            catch (Exception ex)
+            {
+                _logger.Error("Error in ForceReconnect", ex);
+
+                // Last resort - try to reconnect anyway
+                try
+                {
+                    _ws = new WebSocket();
+                    _ws.OnConnect += HandleConnect;
+                    _ws.OnData += HandleData;
+                    _ws.OnClose += HandleClose;
+                    _ws.OnError += HandleError;
+
+                    await _ws.ConnectAsync(_socketUrl);
+                }
+                catch (Exception lastEx)
+                {
+                    _logger.Error("Last resort reconnection also failed", lastEx);
+                }
+            }
+            finally
+            {
+                // Always reset the flag when done
+                _reconnectionInProgress = false;
             }
         }
 
@@ -1134,7 +1132,7 @@ namespace OptionEdge.API.AliceBlue
         /// Connects to the AliceBlue WebSocket server.
         /// </summary>
         /// <param name="cancellationToken">Optional cancellation token to cancel the connection.</param>
-        public void Connect(CancellationToken cancellationToken = default)
+        public async void Connect(CancellationToken cancellationToken = default)
         {
             try
             {
@@ -1146,7 +1144,7 @@ namespace OptionEdge.API.AliceBlue
                 if (!IsConnected)
                 {
                     // Connect to the WebSocket
-                    _ws.Connect(_socketUrl);
+                    await _ws.ConnectAsync(_socketUrl);
                 }
             }
             catch (Exception ex)
