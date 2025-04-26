@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Http;
+using System.Threading;
 using System.Threading.Tasks;
 using LumenWorks.Framework.IO.Csv;
 using Newtonsoft.Json;
@@ -21,6 +22,16 @@ namespace OptionEdge.API.AliceBlue
         string _accessToken;
 
         bool _enableLogging;
+        
+        // Rate limiting configuration
+        private readonly int _maxConcurrentRequests;
+        private readonly SemaphoreSlim _throttler;
+        private readonly Queue<TaskCompletionSource<bool>> _requestQueue;
+        
+        // Per-second rate limiting
+        private int _requestsThisSecond;
+        private readonly object _requestsPerSecondLock = new object();
+        private System.Timers.Timer _requestsPerSecondTimer;
 
         protected readonly RestClient _restClient;
 
@@ -68,10 +79,14 @@ namespace OptionEdge.API.AliceBlue
 
         }
 
-        public AliceBlue(string userId, string apiKey, string baseUrl = null, string websocketUrl = null, bool enableLogging = false, Action<string> onAccessTokenGenerated = null, Func<string> cachedAccessTokenProvider = null)
+        public AliceBlue(string userId, string apiKey, string baseUrl = null, string websocketUrl = null, bool enableLogging = false, Action<string> onAccessTokenGenerated = null, Func<string> cachedAccessTokenProvider = null, int maxConcurrentRequests = 30)
         {
             if (string.IsNullOrEmpty(userId)) throw new ArgumentNullException("User id required.");
             if (string.IsNullOrEmpty(apiKey)) throw new ArgumentNullException("Api key required.");
+            if (maxConcurrentRequests <= 0) {
+                maxConcurrentRequests = 30;
+                if (enableLogging) Utils.LogMessage("Max concurrent requests set to default value of 30.");
+            }
 
             _apiKey = apiKey;
             _userId = userId;
@@ -80,6 +95,18 @@ namespace OptionEdge.API.AliceBlue
             if (!string.IsNullOrEmpty(websocketUrl)) _websocketUrl = websocketUrl;
 
             _enableLogging = enableLogging;
+            
+            // Initialize rate limiting components
+            _maxConcurrentRequests = maxConcurrentRequests;
+            _throttler = new SemaphoreSlim(maxConcurrentRequests, maxConcurrentRequests);
+            _requestQueue = new Queue<TaskCompletionSource<bool>>();
+            
+            // Initialize per-second rate limiting
+            _requestsThisSecond = 0;
+            _requestsPerSecondTimer = new System.Timers.Timer(1000); // 1 second
+            _requestsPerSecondTimer.Elapsed += (sender, e) => ResetRequestsPerSecond();
+            _requestsPerSecondTimer.AutoReset = true;
+            _requestsPerSecondTimer.Start();
 
             var options = new RestClientOptions(_baseUrl);
 
@@ -310,48 +337,110 @@ namespace OptionEdge.API.AliceBlue
             if (historyDataParams == null)
                 throw new ArgumentNullException(nameof(historyDataParams), "History data parameters cannot be null");
                 
-            var historicalDataBaseUrl = "https://a3-chart.aliceblueonline.com/omk/rest/ChartAPIService/chart/history";
+            return await ExecuteHistoricalDataAsync(historyDataParams);
+        }
 
-            HistoryDataResult result = null;
-
-            using (var restClient = new RestClient(historicalDataBaseUrl))
+        private async Task<HistoryDataResult> ExecuteHistoricalDataAsync(HistoryDataParams historyDataParams)
+        {
+            // Check if we've reached the per-second limit
+            bool waitForNextSecond = false;
+            
+            lock (_requestsPerSecondLock)
             {
-                var bearer = $"Bearer {_userId} {_accessToken}";
-                var headers = new HeaderParameter(KnownHeaders.Authorization, bearer);
-                restClient.DefaultParameters.AddParameter(headers);
-
-                var request = new RestRequest();
-                request.Method = Method.Get;
-                request.AddQueryParameter("exchange", historyDataParams.Exchange);
-                request.AddQueryParameter("symbol", historyDataParams.InstrumentToken);
-                request.AddQueryParameter("from", historyDataParams.From);
-                request.AddQueryParameter("to", historyDataParams.To);
-                request.AddQueryParameter("resolution", historyDataParams.Interval);
-                request.AddQueryParameter("user", _userId);
-
-                var response = await restClient.ExecuteGetAsync<HistoryDataResult>(request);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.OK && response.Data != null)
+                if (_requestsThisSecond >= _maxConcurrentRequests)
                 {
-                    result = response.Data;
-
-                    for (int i = 0; i < response.Data.Close.Length; i++)
-                    {
-                        result.Candles.Add(new HistoryCandle
-                        {
-                            Open = response.Data.Open[i],
-                            Close = response.Data.Close[i],
-                            High = response.Data.High[i],
-                            Low = response.Data.Low[i],
-                            Volume = response.Data.Volume[i],
-                            IV = response.Data.IV,
-                            TimeData = response.Data.Time[i]
-                        });
-                    }
+                    waitForNextSecond = true;
+                    
+                    if (_enableLogging)
+                        Utils.LogMessage($"Rate limit reached for this second. Waiting for next second.");
+                }
+                else
+                {
+                    _requestsThisSecond++;
+                    
+                    if (_enableLogging)
+                        Utils.LogMessage($"Request count for this second: {_requestsThisSecond}/{_maxConcurrentRequests}");
                 }
             }
+            
+            if (waitForNextSecond)
+            {
+                // Wait until the next second
+                await Task.Delay(1000);
+                
+                // Recursively call this method to try again
+                return await ExecuteHistoricalDataAsync(historyDataParams);
+            }
+            
+            // Try to acquire a semaphore slot immediately
+            bool acquired = _throttler.Wait(0);
+            
+            if (!acquired)
+            {
+                // If no slot is available, queue the request
+                var tcs = new TaskCompletionSource<bool>();
+                
+                lock (_requestQueue)
+                {
+                    _requestQueue.Enqueue(tcs);
+                    
+                    if (_enableLogging)
+                        Utils.LogMessage($"Historical data request queued. Current queue size: {_requestQueue.Count}");
+                }
+                
+                // Wait for a signal that a slot is available
+                await tcs.Task;
+            }
+            
+            try
+            {
+                var historicalDataBaseUrl = "https://a3-chart.aliceblueonline.com/omk/rest/ChartAPIService/chart/history";
+                HistoryDataResult result = null;
 
-            return result;
+                using (var restClient = new RestClient(historicalDataBaseUrl))
+                {
+                    var bearer = $"Bearer {_userId} {_accessToken}";
+                    var headers = new HeaderParameter(KnownHeaders.Authorization, bearer);
+                    restClient.DefaultParameters.AddParameter(headers);
+
+                    var request = new RestRequest();
+                    request.Method = Method.Get;
+                    request.AddQueryParameter("exchange", historyDataParams.Exchange);
+                    request.AddQueryParameter("symbol", historyDataParams.InstrumentToken);
+                    request.AddQueryParameter("from", historyDataParams.From);
+                    request.AddQueryParameter("to", historyDataParams.To);
+                    request.AddQueryParameter("resolution", historyDataParams.Interval);
+                    request.AddQueryParameter("user", _userId);
+
+                    var response = await restClient.ExecuteGetAsync<HistoryDataResult>(request);
+
+                    if (response.StatusCode == System.Net.HttpStatusCode.OK && response.Data != null)
+                    {
+                        result = response.Data;
+
+                        for (int i = 0; i < response.Data.Close.Length; i++)
+                        {
+                            result.Candles.Add(new HistoryCandle
+                            {
+                                Open = response.Data.Open[i],
+                                Close = response.Data.Close[i],
+                                High = response.Data.High[i],
+                                Low = response.Data.Low[i],
+                                Volume = response.Data.Volume[i],
+                                IV = response.Data.IV,
+                                TimeData = response.Data.Time[i]
+                            });
+                        }
+                    }
+                }
+
+                return result;
+            }
+            finally
+            {
+                // Process the next queued request
+                ProcessNextQueuedRequest();
+            }
         }
 
         public virtual async Task<HistoryDataResult> GetHistoricalData(string exchange, int instrumentToken, DateTime from, DateTime to, string interval, bool index = false)
@@ -778,72 +867,173 @@ namespace OptionEdge.API.AliceBlue
 
         protected async Task<T> ExecuteAsync<T>(string endpoint, object inputParams = null, Method method = Method.Get) where T : class
         {
-            var request = new RestRequest(endpoint);
-
-            if (inputParams != null)
-                request.AddStringBody(Utils.Serialize(inputParams), ContentType.Json);
-
-            var response = await _restClient.ExecuteAsync<T>(request, method);
-
-            if (!string.IsNullOrEmpty(response.Content))
+            // Check if we've reached the per-second limit
+            bool waitForNextSecond = false;
+            
+            lock (_requestsPerSecondLock)
             {
-                if (response.Content == "Unauthorized")
+                if (_requestsThisSecond >= _maxConcurrentRequests)
                 {
-                    throw new UnauthorizedAccessException(response.ErrorException?.ToString());
-                }
-
-                if (response.Content.Contains(Constants.API_RESPONSE_STATUS_Not_OK))
-                {
-                    var errorMessage = $"Error executing API request. Status: {response.StatusCode}-{response.ErrorMessage}";
+                    waitForNextSecond = true;
+                    
                     if (_enableLogging)
-                        Utils.LogMessage(errorMessage);
-                    throw new InvalidOperationException(errorMessage);
+                        Utils.LogMessage($"Rate limit reached for this second. Waiting for next second.");
+                }
+                else
+                {
+                    _requestsThisSecond++;
+                    
+                    if (_enableLogging)
+                        Utils.LogMessage($"Request count for this second: {_requestsThisSecond}/{_maxConcurrentRequests}");
                 }
             }
-
-            if (!string.IsNullOrEmpty(response.Content) && response.Content.Contains(Constants.API_RESPONSE_STATUS_OK))
-                return response.Data;
-            else
+            
+            if (waitForNextSecond)
             {
-                var errorMessage = $@"
-                        Status Code: {response.StatusCode}
-                        Status Description: {response.StatusDescription}
-                        Content: {response.Content}
-                        Error Message: {response.ErrorMessage}
-                        Error Exception: {response.ErrorException?.Message}";
-
-                if (_enableLogging)
-                    Utils.LogMessage(errorMessage);
-
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
-                    throw new UnauthorizedAccessException(errorMessage);
-
-                // Create a new instance of T with Status and ErrorMessage set
-                // instead of returning default(T)
-                if (typeof(BaseResponseResult).IsAssignableFrom(typeof(T)))
+                // Wait until the next second
+                await Task.Delay(1000);
+                
+                // Recursively call this method to try again
+                return await ExecuteAsync<T>(endpoint, inputParams, method);
+            }
+            
+            // Try to acquire a semaphore slot immediately
+            bool acquired = _throttler.Wait(0);
+            
+            if (!acquired)
+            {
+                // If no slot is available, queue the request
+                var tcs = new TaskCompletionSource<bool>();
+                
+                lock (_requestQueue)
                 {
-                    try
+                    _requestQueue.Enqueue(tcs);
+                    
+                    if (_enableLogging)
+                        Utils.LogMessage($"Request queued. Current queue size: {_requestQueue.Count}");
+                }
+                
+                // Wait for a signal that a slot is available
+                await tcs.Task;
+            }
+            
+            try
+            {
+                var request = new RestRequest(endpoint);
+
+                if (inputParams != null)
+                    request.AddStringBody(Utils.Serialize(inputParams), ContentType.Json);
+
+                var response = await _restClient.ExecuteAsync<T>(request, method);
+                
+                // Process the next queued request if any
+                ProcessNextQueuedRequest();
+
+                if (!string.IsNullOrEmpty(response.Content))
+                {
+                    if (response.Content == "Unauthorized")
                     {
-                        // Create a new instance of T
-                        var result = Activator.CreateInstance<T>();
-                        
-                        // Set the Status and ErrorMessage properties
-                        if (result is BaseResponseResult baseResult)
-                        {
-                            baseResult.Status = Constants.STATUS_NOT_OK;
-                            baseResult.ErrorMessage = response.ErrorMessage ?? errorMessage;
-                        }
-                        
-                        return result;
+                        throw new UnauthorizedAccessException(response.ErrorException?.ToString());
                     }
-                    catch (Exception ex)
+
+                    if (response.Content.Contains(Constants.API_RESPONSE_STATUS_Not_OK))
                     {
+                        var errorMessage = $"Error executing API request. Status: {response.StatusCode}-{response.ErrorMessage}";
                         if (_enableLogging)
-                            Utils.LogMessage($"Error creating instance of {typeof(T).Name}: {ex.Message}");
+                            Utils.LogMessage(errorMessage);
+                        throw new InvalidOperationException(errorMessage);
                     }
                 }
 
-                return default(T);
+                if (!string.IsNullOrEmpty(response.Content) && response.Content.Contains(Constants.API_RESPONSE_STATUS_OK))
+                    return response.Data;
+                else
+                {
+                    var errorMessage = $@"
+                            Status Code: {response.StatusCode}
+                            Status Description: {response.StatusDescription}
+                            Content: {response.Content}
+                            Error Message: {response.ErrorMessage}
+                            Error Exception: {response.ErrorException?.Message}";
+
+                    if (_enableLogging)
+                        Utils.LogMessage(errorMessage);
+
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+                        throw new UnauthorizedAccessException(errorMessage);
+
+                    // Create a new instance of T with Status and ErrorMessage set
+                    // instead of returning default(T)
+                    if (typeof(BaseResponseResult).IsAssignableFrom(typeof(T)))
+                    {
+                        try
+                        {
+                            // Create a new instance of T
+                            var result = Activator.CreateInstance<T>();
+                            
+                            // Set the Status and ErrorMessage properties
+                            if (result is BaseResponseResult baseResult)
+                            {
+                                baseResult.Status = Constants.STATUS_NOT_OK;
+                                baseResult.ErrorMessage = response.ErrorMessage ?? errorMessage;
+                            }
+                            
+                            return result;
+                        }
+                        catch (Exception ex)
+                        {
+                            if (_enableLogging)
+                                Utils.LogMessage($"Error creating instance of {typeof(T).Name}: {ex.Message}");
+                        }
+                    }
+
+                    return default(T);
+                }
+            }
+            finally
+            {
+                // Release the semaphore slot if an exception occurs
+                if (_throttler.CurrentCount == 0 && _requestQueue.Count == 0)
+                {
+                    _throttler.Release();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Processes the next request in the queue if any
+        /// </summary>
+        private void ProcessNextQueuedRequest()
+        {
+            lock (_requestQueue)
+            {
+                if (_requestQueue.Count > 0)
+                {
+                    // Get the next request from the queue
+                    var nextRequest = _requestQueue.Dequeue();
+                    
+                    // Complete the task to signal that it can proceed
+                    nextRequest.SetResult(true);
+                }
+                else
+                {
+                    // If no requests are queued, release the semaphore
+                    _throttler.Release();
+                }
+            }
+        }
+        
+        /// <summary>
+        /// Resets the per-second request counter
+        /// </summary>
+        private void ResetRequestsPerSecond()
+        {
+            lock (_requestsPerSecondLock)
+            {
+                if (_enableLogging && _requestsThisSecond > 0)
+                    Utils.LogMessage($"Resetting request counter. Processed {_requestsThisSecond} requests in the last second.");
+                
+                _requestsThisSecond = 0;
             }
         }
         
@@ -872,6 +1062,9 @@ namespace OptionEdge.API.AliceBlue
             {
                 _restClient?.Dispose();
                 _ticker?.Dispose();
+                _throttler?.Dispose();
+                _requestsPerSecondTimer?.Stop();
+                _requestsPerSecondTimer?.Dispose();
             }
         }
     }
