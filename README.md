@@ -42,14 +42,17 @@ Please note down the Api key & your Alice Blue User Id. You will be using the Ap
 ## Troubleshooting
 While creating the instance of Alice Blue Api Client set enable logging parameter as true. Client library will log all the error/info messages to the console. This will help to troubleshoot any issues while integrating library with your project. You can disable this flag in production.
 
-## BREAKING CHANGES V2.0.X
+## BREAKING CHANGES V3.0.0
 This version has breaking changes from previous version
-1. Various fields from the Tick class removed to improve the performance
+1. Added rate limit check
+2. Added async processing of broker api
+3. Error handling
+4. WebSocket reconnection handling
 
 ## Install library
 
 ```
-Install-Package OptionEdge.API.AliceBlue -Version 2.0.5
+Install-Package OptionEdge.API.AliceBlue -Version 3.0.0
 ```
 
 ## Sample project

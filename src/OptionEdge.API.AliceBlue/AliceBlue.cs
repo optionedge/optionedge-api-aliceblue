@@ -823,6 +823,7 @@ namespace OptionEdge.API.AliceBlue
                                 TradingSymbol = csv.HasHeader("Trading Symbol") ? csv["Trading Symbol"] : null,
                                 Expiry = csv.HasHeader("Expiry Date") && !string.IsNullOrEmpty(csv["Expiry Date"]) ? DateTime.Parse(csv["Expiry Date"]) : default(DateTime?),
                                 LotSize = csv.HasHeader("Lot Size") && !string.IsNullOrEmpty(csv["Lot Size"]) ? int.Parse(csv["Lot Size"]) : 0,
+                                BoardLotQty = csv.HasHeader("Board Lot Qty") && !string.IsNullOrEmpty(csv["Board Lot Qty"]) ? int.Parse(csv["Board Lot Qty"]) : 0,
                                 TickSize = csv.HasHeader("Tick Size") && !string.IsNullOrEmpty(csv["Tick Size"]) ? decimal.Parse(csv["Tick Size"]) : 0,
                             };
 

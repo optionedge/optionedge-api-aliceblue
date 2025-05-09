@@ -22,6 +22,8 @@ namespace OptionEdge.API.AliceBlue.Records
 
         public int LotSize { get; set; }
 
+        public int BoardLotQty { get; set; }
+
         public string OptionType { get; set; }
 
         public decimal Strike { get; set; }
